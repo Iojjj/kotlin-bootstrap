@@ -1,0 +1,41 @@
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion sdk_version_compile
+    defaultConfig {
+        minSdkVersion sdk_version_min
+        targetSdkVersion sdk_version_target
+        versionCode version_code
+        versionName version_name
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        debug {
+            testCoverageEnabled false
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    implementation project(':bs-adapters')
+
+    api "com.android.support:appcompat-v7:$android_sdk_version_target"
+    api "com.android.support:design:$android_sdk_version_target"
+    api "com.android.support:recyclerview-v7:$android_sdk_version_target"
+
+    implementation "com.futuremind.recyclerfastscroll:fastscroll:$lib_version_fastscroll"
+
+    implementation "io.reactivex.rxjava2:rxandroid:$lib_version_rxandroid"
+    implementation "io.reactivex.rxjava2:rxjava:$lib_version_rxjava2"
+}

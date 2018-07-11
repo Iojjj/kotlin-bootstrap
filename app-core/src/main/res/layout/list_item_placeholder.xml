@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextView
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/listPreferredItemHeightSmall"
+        android:paddingLeft="?attr/listPreferredItemPaddingLeft"
+        android:paddingRight="?attr/listPreferredItemPaddingRight"
+        android:gravity="center_vertical"
+        android:textAppearance="?attr/textAppearanceListItemSmall"
+        android:text="Loading..."
+        android:textColor="#83000000"
+        android:background="@android:color/white"
+        />

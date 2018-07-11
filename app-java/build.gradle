@@ -1,0 +1,41 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion sdk_version_compile
+    defaultConfig {
+        applicationId "com.github.iojjj.app.java"
+        minSdkVersion sdk_version_min
+        targetSdkVersion sdk_version_target
+        versionCode version_code
+        versionName version_name
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        debug {
+            testCoverageEnabled false
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    implementation project(':app-core')
+    implementation project(':bs-adapters')
+    implementation project(':bs-utils')
+
+    implementation "com.android.support:appcompat-v7:$android_sdk_version_target"
+    implementation "com.android.support:design:$android_sdk_version_target"
+
+    implementation "io.reactivex.rxjava2:rxandroid:$lib_version_rxandroid"
+    implementation "io.reactivex.rxjava2:rxjava:$lib_version_rxjava2"
+}

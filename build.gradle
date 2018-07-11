@@ -1,0 +1,159 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+buildscript {
+
+    ext.kotlin_version = '1.2.51'
+    ext.gradle_version = '3.1.3'
+    ext.maven_publish_version = '0.4.0'
+
+    ext.android_sdk_version_target = '28.0.0-alpha3'
+    ext.android_ktx_version = '0.3'
+    ext.android_padging_version = '1.0.1'
+
+    ext.sdk_version_compile = 28
+    ext.sdk_version_min = 15
+    ext.sdk_version_target = 28
+
+    ext.lib_version_fastscroll = '0.2.5'
+    ext.lib_version_rxjava2 = '2.1.16'
+    ext.lib_version_rxkotlin = '2.2.0'
+    ext.lib_version_rxandroid = '2.0.2'
+
+    ext.version_code = 1
+    ext.version_name = "1.0.0"
+
+    repositories {
+        google()
+        jcenter()
+    }
+    dependencies {
+        classpath "com.android.tools.build:gradle:$gradle_version"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "com.vanniktech:gradle-maven-publish-plugin:$maven_publish_version"
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        jcenter()
+        maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+    }
+}
+
+project.afterEvaluate {
+    if (!file("version.properties").exists()) {
+        generateProps()
+    }
+    project.setProperty("VERSION_NAME", getVersion())
+    println "Current VERSION_NAME: " + project.getProperty("VERSION_NAME")
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
+
+task generateVersionProps() {
+    doFirst {
+        generateProps()
+    }
+}
+
+def generateProps() {
+    def versionProps = new Properties()
+    versionProps["version.major"] = "0"
+    versionProps["version.minor"] = "0"
+    versionProps["version.build"] = "0"
+    versionProps["version.type"] = ""
+    versionProps["version.type.build"] = "1"
+    saveVersionProps(versionProps)
+    println "Successfully generated"
+}
+
+task printVersion() {
+    doFirst {
+        println getVersion()
+    }
+}
+
+task setVersionType() {
+    doFirst {
+        def versionProps = getVersionProps()
+        def type = getProperty("versionType") ?: ""
+        versionProps["version.type"] = type
+        saveVersionProps(versionProps)
+    }
+}
+
+task incrementBuild() {
+    doFirst {
+        def versionProps = getVersionProps()
+        incrementProp(versionProps, "version.build")
+        saveVersionProps(versionProps)
+    }
+}
+
+private static String incrementProp(Properties versionProps, String propName) {
+    def newValue = Integer.parseInt(versionProps[propName] ?: "0") + 1
+    versionProps[propName] = String.valueOf(newValue)
+}
+
+String getVersion() {
+    def versionProps = getVersionProps()
+    def major = versionProps["version.major"]
+    def minor = versionProps["version.minor"]
+    def build = versionProps["version.build"] ?: "0"
+    def type = versionProps["version.type"]
+    def typeBuild = versionProps["version.type.build"] ?: "1"
+    if (type == null || type == "") {
+        return "$major.$minor.$build"
+    } else {
+        return "$major.$minor.$build-$type.$typeBuild"
+    }
+}
+
+task incrementMinor() {
+    doFirst {
+        def versionProps = getVersionProps()
+        incrementProp(versionProps, "version.minor")
+        versionProps["version.build"] = "0"
+        saveVersionProps(versionProps)
+    }
+}
+
+task incrementMajor() {
+    doFirst {
+        def versionProps = getVersionProps()
+        incrementProp(versionProps, "version.major")
+        versionProps["version.minor"] = "0"
+        versionProps["version.build"] = "0"
+        saveVersionProps(versionProps)
+    }
+}
+
+task incrementTypeBuild() {
+    doFirst {
+        def versionProps = getVersionProps()
+        incrementProp(versionProps, "version.type.build")
+        saveVersionProps(versionProps)
+    }
+}
+
+Properties getVersionProps() {
+    def versionProps = new Properties()
+    def file = file("version.properties")
+    if (!file.exists()) {
+        throw new FileNotFoundException("File not exists.")
+    }
+    file.withInputStream { versionProps.load(it) }
+    return versionProps
+}
+
+void saveVersionProps(Properties versionProps) {
+    file("version.properties").withOutputStream { versionProps.store(it, null) }
+    project.setProperty("VERSION_NAME", getVersion())
+    println versionProps
+    println "New VERSION_NAME: ${project.getProperty("VERSION_NAME")}"
+}
