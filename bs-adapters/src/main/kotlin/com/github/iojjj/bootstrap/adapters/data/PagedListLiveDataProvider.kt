@@ -10,18 +10,21 @@ import com.github.iojjj.bootstrap.utils.observableOf
 import java.util.concurrent.Executor
 
 /**
- * Implementation of [ConfigurableComputableLiveData] that uses [DataSource] to compute [PagedList] values.
+ * Implementation of [LiveDataProvider] that uses [DataSource] to compute [PagedList] values.
+ *
+ * @param K type of key
+ * @param V type of value
  */
 @SuppressLint("RestrictedApi")
-internal class PagedListLiveData<K, V>(private val factory: ConfigurableLiveData.Factory<DataSource<K, V>>,
-                                       private val config: PagedList.Config,
-                                       private val fetchExecutor: Executor,
-                                       private val mainExecutor: Executor,
-                                       private var initialKey: K?,
-                                       private var boundaryCallback: PagedList.BoundaryCallback<V>?,
-                                       private val observable: InvokableObservable<() -> Unit> = observableOf())
+internal class PagedListLiveDataProvider<K, V>(private val factory: ConfigLiveData.Factory<DataSource<K, V>>,
+                                               private val config: PagedList.Config,
+                                               private val fetchExecutor: Executor,
+                                               private val mainExecutor: Executor,
+                                               private var initialKey: K?,
+                                               private var boundaryCallback: PagedList.BoundaryCallback<V>?,
+                                               private val observable: InvokableObservable<() -> Unit> = observableOf())
     :
-        ConfigurableComputableLiveData<PagedList<V>>,
+        LiveDataProvider<PagedList<V>?>,
         Observable<() -> Unit> by observable {
 
     private var list: PagedList<V>? = null
@@ -29,7 +32,7 @@ internal class PagedListLiveData<K, V>(private val factory: ConfigurableLiveData
     private val invalidatedCallback = DataSource.InvalidatedCallback { observable.notifyObservers { it() } }
 
     @Suppress("UNCHECKED_CAST")
-    override fun compute(configuration: Configuration): PagedList<V> {
+    override fun compute(configuration: Configuration): PagedList<V>? {
         val initialKey = list?.lastKey as? K ?: initialKey
         do {
             dataSource?.removeInvalidatedCallback(invalidatedCallback)
@@ -42,7 +45,7 @@ internal class PagedListLiveData<K, V>(private val factory: ConfigurableLiveData
                     .setBoundaryCallback(boundaryCallback)
                     .build()
         } while (list!!.isDetached)
-        return list!!
+        return list
     }
 
     override fun observe(owner: LifecycleOwner) {

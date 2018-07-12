@@ -2,6 +2,8 @@ package com.github.iojjj.bootstrap.adapters.selection.selections
 
 /**
  * Implementation of [MutableSelection] that allows to select only one item.
+ *
+ * @param T type of items
  */
 internal class SingleSelection<T> : MutableSelection<T> {
 
@@ -20,7 +22,7 @@ internal class SingleSelection<T> : MutableSelection<T> {
 
     override fun isEmpty(): Boolean = item == EMPTY
 
-    override fun contains(item: T): Boolean = item == item
+    override fun contains(item: T): Boolean = this.item == item
 
     override fun snapshot(): MutableSelection<T> = MultipleSelection(this)
 

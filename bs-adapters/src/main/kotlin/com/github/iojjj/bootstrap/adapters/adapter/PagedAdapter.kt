@@ -21,7 +21,7 @@ import android.view.ViewGroup
 import androidx.core.util.set
 import androidx.core.util.valueIterator
 import com.github.iojjj.bootstrap.adapters.adapter.PagedAdapter.ViewHolderFactory
-import com.github.iojjj.bootstrap.adapters.data.ConfigurableLiveData
+import com.github.iojjj.bootstrap.adapters.data.ConfigLiveData
 import com.github.iojjj.bootstrap.adapters.data.Configuration
 import com.github.iojjj.bootstrap.adapters.data.OnInvalidatedObserver
 import com.github.iojjj.bootstrap.adapters.selection.trackers.*
@@ -53,13 +53,13 @@ typealias OnLongClickListener<T> = (PagedAdapter<T>, View, Int, Long) -> Boolean
  * @property selectionTracker Tracker used to select items in adapter.
  */
 class PagedAdapter<T> private constructor(
-        private val liveData: ConfigurableLiveData<PagedList<T>>,
+        val liveData: ConfigLiveData<PagedList<T>?>,
         private val itemDataMap: SparseArray<ItemData>,
         private val itemIdMapper: IdMapper<T>?,
         private val onItemClickListener: OnClickListener<T>?,
         private val onItemLongClickListener: OnLongClickListener<T>?,
         private val invalidationMarker: Any?,
-        selectionTrackerBuilder: SelectionTracker.BuilderStageFinal<T>?,
+        selectionTrackerBuilder: SelectionTracker.StageObservers<T>?,
         diffItemCallback: DiffUtil.ItemCallback<T>)
 
     :
@@ -78,40 +78,23 @@ class PagedAdapter<T> private constructor(
         /**
          * Create a new instance of builder that help to configure [PagedAdapter].
          *
+         * @param T type of items
+         *
          * @return a new instance of builder
          */
         @JvmStatic
-        fun <T> newBuilder(): BuilderStageDataSource<T> = Builder()
+        fun <T> newBuilder(): StageDataSource<T> = Builder()
 
         /**
          * Create a new instance of builder that help to configure [PagedAdapter].
          *
-         * @param liveData instance of [ConfigurableLiveData] passed to the builder
+         * @param liveData instance of [ConfigLiveData] passed to the builder
+         * @param T type of items
          *
          * @return a new instance of builder
          */
         @JvmStatic
-        fun <T> newBuilderWith(liveData: ConfigurableLiveData<PagedList<T>>): BuilderStageFinal<T> = newBuilder<T>().withLiveData(liveData)
-
-        /**
-         * Create a new instance of builder that help to configure [PagedAdapter].
-         *
-         * @param data list of items passed to the builder
-         *
-         * @return a new instance of builder
-         */
-        @JvmStatic
-        fun <T> newBuilderWith(data: List<T>): BuilderStageFinal<T> = newBuilder<T>().withLiveData(ConfigurableLiveData.ofPagedList(data))
-
-        /**
-         * Create a new instance of builder that help to configure [PagedAdapter].
-         *
-         * @param data list of items passed to the builder
-         *
-         * @return a new instance of builder
-         */
-        @JvmStatic
-        fun <T> newBuilderWith(data: Array<T>): BuilderStageFinal<T> = newBuilder<T>().withLiveData(ConfigurableLiveData.ofPagedList(data))
+        fun <T> newBuilderWith(liveData: ConfigLiveData<PagedList<T>?>): StageOptional<T> = newBuilder<T>().withLiveData(liveData)
     }
 
     val configuration: Configuration
@@ -133,7 +116,7 @@ class PagedAdapter<T> private constructor(
     init {
         setHasStableIds(itemIdMapper != null)
         if (invalidationMarker != null) {
-            liveData.addOnInvalidatedObserver(OnInvalidatedObserver {
+            liveData.onInvalidatedObservable.addObserver(OnInvalidatedObserver {
                 notifyItemRangeChanged(0, itemCount, invalidationMarker)
             })
         }
@@ -277,7 +260,7 @@ class PagedAdapter<T> private constructor(
     }
 
     /**
-     * Filter adapter with given query. It's up to [ConfigurableLiveData.Factory] to perform all filtering though. When it receive [Configuration]
+     * Filter adapter with given query. It's up to [ConfigLiveData.Factory] to perform all filtering though. When it receive [Configuration]
      * the passed `query` can be accessed via [CONFIG_KEY_FILTER] key.
      *
      * The contract of this method: pass any value to start filtering, pass `null` to clear the filter.
@@ -312,24 +295,26 @@ class PagedAdapter<T> private constructor(
     }
 
     /**
-     * First stage of building a [PagedAdapter].
+     * Builder stage that allows to set a live data.
+     *
+     * @param T type of items
      */
-    interface BuilderStageDataSource<T> {
+    interface StageDataSource<T> {
 
         /**
-         * Set live data.
+         * Set a live data that will populate adapter.
          *
-         * @param liveData instance of `ConfigurableLiveData`
+         * @param liveData instance of `ConfigLiveData`
          *
-         * @return next stage of builder
+         * @return same builder for chaining calls
          */
-        fun withLiveData(liveData: ConfigurableLiveData<PagedList<T>>): BuilderStageFinal<T>
+        fun withLiveData(liveData: ConfigLiveData<PagedList<T>?>): StageOptional<T>
     }
 
     /**
      * Final stage of building a [PagedAdapter].
      */
-    interface BuilderStageFinal<T> {
+    interface StageOptional<T> {
 
         /**
          * Set callback for calculating the diff between two non-null items in a list.
@@ -338,7 +323,7 @@ class PagedAdapter<T> private constructor(
          *
          * @return same builder for chaining calls
          */
-        fun withDiffItemCallback(value: DiffUtil.ItemCallback<T>): BuilderStageFinal<T>
+        fun withDiffItemCallback(value: DiffUtil.ItemCallback<T>): StageOptional<T>
 
         /**
          * Set specific layout for placeholders. Same as calling [withPlaceholderType(Int, ViewHolderFactory)][withPlaceholderType]
@@ -348,8 +333,10 @@ class PagedAdapter<T> private constructor(
          * @param layoutId resource ID of layout
          *
          * @return same builder for chaining calls
+         *
+         * @see PlaceholderViewHolder
          */
-        fun withSimplePlaceholderType(@LayoutRes layoutId: Int): BuilderStageFinal<T>
+        fun withSimplePlaceholderType(@LayoutRes layoutId: Int): StageOptional<T>
 
         /**
          * Set specific layout for placeholders. Root view of layout must implement [PlaceholderViewHolder] interface.
@@ -358,7 +345,7 @@ class PagedAdapter<T> private constructor(
          *
          * @return same builder for chaining calls
          */
-        fun withPlaceholderType(@LayoutRes layoutId: Int): BuilderStageFinal<T>
+        fun withPlaceholderType(@LayoutRes layoutId: Int): StageOptional<T>
 
         /**
          * Set specific layout for placeholders. View with specified ID must implement [PlaceholderViewHolder] interface.
@@ -368,7 +355,7 @@ class PagedAdapter<T> private constructor(
          *
          * @return same builder for chaining calls
          */
-        fun withPlaceholderType(@LayoutRes layoutId: Int, @IdRes viewId: Int): BuilderStageFinal<T>
+        fun withPlaceholderType(@LayoutRes layoutId: Int, @IdRes viewId: Int): StageOptional<T>
 
         /**
          * Set specific layout for placeholders.
@@ -378,7 +365,7 @@ class PagedAdapter<T> private constructor(
          *
          * @return same builder for chaining calls
          */
-        fun withPlaceholderType(@LayoutRes layoutId: Int, viewHolderFactory: ViewHolderFactory): BuilderStageFinal<T>
+        fun withPlaceholderType(@LayoutRes layoutId: Int, viewHolderFactory: ViewHolderFactory): StageOptional<T>
 
         /**
          * Set specific layout for placeholders.
@@ -388,7 +375,7 @@ class PagedAdapter<T> private constructor(
          *
          * @return same builder for chaining calls
          */
-        fun withPlaceholderType(@LayoutRes layoutId: Int, viewHolderFactory: VhFactory): BuilderStageFinal<T>
+        fun withPlaceholderType(@LayoutRes layoutId: Int, viewHolderFactory: VhFactory): StageOptional<T>
 
         /**
          * Set layout for specific item. Root view of layout must implement [ViewHolder] interface.
@@ -398,7 +385,7 @@ class PagedAdapter<T> private constructor(
          *
          * @return same builder for chaining calls
          */
-        fun withItemType(@LayoutRes layoutId: Int, itemTypePredicate: Predicate<Any>): BuilderStageFinal<T>
+        fun withItemType(@LayoutRes layoutId: Int, itemTypePredicate: Predicate<Any>): StageOptional<T>
 
         /**
          * Set layout for specific item. Root view of layout must implement [ViewHolder] interface.
@@ -408,7 +395,7 @@ class PagedAdapter<T> private constructor(
          *
          * @return same builder for chaining calls
          */
-        fun withItemType(@LayoutRes layoutId: Int, clazz: Class<*>): BuilderStageFinal<T>
+        fun withItemType(@LayoutRes layoutId: Int, clazz: Class<*>): StageOptional<T>
 
         /**
          * Set layout for specific item. View with specified ID must implement [ViewHolder] interface.
@@ -421,7 +408,7 @@ class PagedAdapter<T> private constructor(
          */
         fun withItemType(@LayoutRes layoutId: Int,
                          itemTypePredicate: Predicate<Any>,
-                         @IdRes viewId: Int): BuilderStageFinal<T>
+                         @IdRes viewId: Int): StageOptional<T>
 
         /**
          * Set layout for specific item. View with specified ID must implement [ViewHolder] interface.
@@ -434,7 +421,7 @@ class PagedAdapter<T> private constructor(
          */
         fun withItemType(@LayoutRes layoutId: Int,
                          clazz: Class<*>,
-                         @IdRes viewId: Int): BuilderStageFinal<T>
+                         @IdRes viewId: Int): StageOptional<T>
 
         /**
          * Set layout for specific item. View with specified ID must implement [ViewHolder] interface.
@@ -447,7 +434,7 @@ class PagedAdapter<T> private constructor(
          */
         fun withItemType(@LayoutRes layoutId: Int,
                          itemTypePredicate: Predicate<Any>,
-                         viewHolderFactory: ViewHolderFactory): BuilderStageFinal<T>
+                         viewHolderFactory: ViewHolderFactory): StageOptional<T>
 
         /**
          * Set layout for specific item. View with specified ID must implement [ViewHolder] interface.
@@ -460,7 +447,7 @@ class PagedAdapter<T> private constructor(
          */
         fun withItemType(@LayoutRes layoutId: Int,
                          clazz: Class<*>,
-                         viewHolderFactory: ViewHolderFactory): BuilderStageFinal<T>
+                         viewHolderFactory: ViewHolderFactory): StageOptional<T>
 
         /**
          * Set layout for specific item. View with specified ID must implement [ViewHolder] interface.
@@ -473,7 +460,7 @@ class PagedAdapter<T> private constructor(
          */
         fun withItemType(@LayoutRes layoutId: Int,
                          itemTypePredicate: Predicate<Any>,
-                         viewHolderFactory: VhFactory): BuilderStageFinal<T>
+                         viewHolderFactory: VhFactory): StageOptional<T>
 
 
         /**
@@ -484,7 +471,7 @@ class PagedAdapter<T> private constructor(
          *
          * @return same builder for chaining calls
          */
-        fun withItemType(@LayoutRes layoutId: Int, clazz: KClass<*>): BuilderStageFinal<T>
+        fun withItemType(@LayoutRes layoutId: Int, clazz: KClass<*>): StageOptional<T>
 
         /**
          * Set layout for specific item. View with specified ID must implement [ViewHolder] interface.
@@ -497,7 +484,7 @@ class PagedAdapter<T> private constructor(
          */
         fun withItemType(@LayoutRes layoutId: Int,
                          clazz: KClass<*>,
-                         @IdRes viewId: Int): BuilderStageFinal<T>
+                         @IdRes viewId: Int): StageOptional<T>
 
         /**
          * Set layout for specific item. View with specified ID must implement [ViewHolder] interface.
@@ -510,7 +497,7 @@ class PagedAdapter<T> private constructor(
          */
         fun withItemType(@LayoutRes layoutId: Int,
                          clazz: KClass<*>,
-                         viewHolderFactory: VhFactory): BuilderStageFinal<T>
+                         viewHolderFactory: VhFactory): StageOptional<T>
 
 
         /**
@@ -523,7 +510,7 @@ class PagedAdapter<T> private constructor(
          * @see RecyclerView.Adapter.hasStableIds
          * @see RecyclerView.Adapter.getItemId
          */
-        fun withItemIdMapper(mapper: ItemIdMapper<T>): BuilderStageFinal<T>
+        fun withItemIdMapper(mapper: ItemIdMapper<T>): StageOptional<T>
 
         /**
          * Set mapper that returns the stable ID for the item at position.
@@ -535,7 +522,7 @@ class PagedAdapter<T> private constructor(
          * @see RecyclerView.Adapter.hasStableIds
          * @see RecyclerView.Adapter.getItemId
          */
-        fun withItemIdMapper(mapper: IdMapper<T>): BuilderStageFinal<T>
+        fun withItemIdMapper(mapper: IdMapper<T>): StageOptional<T>
 
         /**
          * Set listener that will be called when user clicks on item.
@@ -544,7 +531,7 @@ class PagedAdapter<T> private constructor(
          *
          * @return same builder for chaining calls
          */
-        fun withOnItemClickListener(onItemClickListener: OnItemClickListener<T>): BuilderStageFinal<T>
+        fun withOnItemClickListener(onItemClickListener: OnItemClickListener<T>): StageOptional<T>
 
         /**
          * Set listener that will be called when user clicks on item.
@@ -553,7 +540,7 @@ class PagedAdapter<T> private constructor(
          *
          * @return same builder for chaining calls
          */
-        fun withOnItemClickListener(onItemClickListener: OnClickListener<T>): BuilderStageFinal<T>
+        fun withOnItemClickListener(onItemClickListener: OnClickListener<T>): StageOptional<T>
 
         /**
          * Set listener that will be called when user long clicks on item.
@@ -562,7 +549,7 @@ class PagedAdapter<T> private constructor(
          *
          * @return same builder for chaining calls
          */
-        fun withOnItemLongClickListener(onItemLongClickListener: OnItemLongClickListener<T>): BuilderStageFinal<T>
+        fun withOnItemLongClickListener(onItemLongClickListener: OnItemLongClickListener<T>): StageOptional<T>
 
         /**
          * Set listener that will be called when user long clicks on item.
@@ -571,16 +558,16 @@ class PagedAdapter<T> private constructor(
          *
          * @return same builder for chaining calls
          */
-        fun withOnItemLongClickListener(onItemLongClickListener: OnLongClickListener<T>): BuilderStageFinal<T>
+        fun withOnItemLongClickListener(onItemLongClickListener: OnLongClickListener<T>): StageOptional<T>
 
         /**
-         * Set payload that will be passed to [ViewHolder.bind] method when data source invalidated.
+         * Set marker that will be passed to [ViewHolder.bind] method when data source invalidated.
          *
-         * @param marker any payload
+         * @param marker any marker
          *
          * @return same builder for chaining calls
          */
-        fun withOnLiveDataInvalidatedMarker(marker: Any): BuilderStageFinal<T>
+        fun withOnLiveDataInvalidatedMarker(marker: Any): StageOptional<T>
 
         /**
          * Set selection tracker used to select items in adapter.
@@ -589,7 +576,7 @@ class PagedAdapter<T> private constructor(
          *
          * @return same builder for chaining calls
          */
-        fun withSelectionTracker(builder: SelectionTracker.BuilderStageFinal<T>): BuilderStageFinal<T>
+        fun withSelectionTracker(builder: SelectionTracker.StageObservers<T>): StageOptional<T>
 
         /**
          * Create an instance of adapter with provided configuration.
@@ -606,103 +593,103 @@ class PagedAdapter<T> private constructor(
      */
     @Suppress("MemberVisibilityCanBePrivate", "unused")
     private class Builder<T> :
-            BuilderStageDataSource<T>,
-            BuilderStageFinal<T> {
+            StageDataSource<T>,
+            StageOptional<T> {
 
-        private lateinit var liveData: ConfigurableLiveData<PagedList<T>>
+        private lateinit var liveData: ConfigLiveData<PagedList<T>?>
         private var diffCallback: DiffUtil.ItemCallback<T>? = null
         private var invalidationMarker: Any? = null
         private var itemIdMapper: IdMapper<T>? = null
         private var onItemClickListener: OnClickListener<T>? = null
         private var onItemLongClickListener: OnLongClickListener<T>? = null
-        private var selectionTrackerBuilder: SelectionTracker.BuilderStageFinal<T>? = null
+        private var selectionTrackerBuilder: SelectionTracker.StageObservers<T>? = null
         private val itemDataMap = SparseArray<ItemData>()
         private val nextItemType = AtomicInteger(1)
 
-        override fun withLiveData(liveData: ConfigurableLiveData<PagedList<T>>): BuilderStageFinal<T> {
+        override fun withLiveData(liveData: ConfigLiveData<PagedList<T>?>): StageOptional<T> {
             this.liveData = liveData
             return this
         }
 
-        override fun withDiffItemCallback(value: DiffUtil.ItemCallback<T>): BuilderStageFinal<T> {
+        override fun withDiffItemCallback(value: DiffUtil.ItemCallback<T>): StageOptional<T> {
             diffCallback = value
             return this
         }
 
-        override fun withSimplePlaceholderType(layoutId: Int): BuilderStageFinal<T> {
+        override fun withSimplePlaceholderType(layoutId: Int): StageOptional<T> {
             return withPlaceholderType(layoutId, ViewHolder.Factory)
         }
 
-        override fun withPlaceholderType(@LayoutRes layoutId: Int): BuilderStageFinal<T> {
+        override fun withPlaceholderType(@LayoutRes layoutId: Int): StageOptional<T> {
             return withPlaceholderType(layoutId) { tryWrap(it) }
         }
 
-        override fun withPlaceholderType(@LayoutRes layoutId: Int, @IdRes viewId: Int): BuilderStageFinal<T> {
+        override fun withPlaceholderType(@LayoutRes layoutId: Int, @IdRes viewId: Int): StageOptional<T> {
             return withPlaceholderType(layoutId) { tryWrap(it, viewId) }
         }
 
-        override fun withPlaceholderType(@LayoutRes layoutId: Int, viewHolderFactory: ViewHolderFactory): BuilderStageFinal<T> {
+        override fun withPlaceholderType(@LayoutRes layoutId: Int, viewHolderFactory: ViewHolderFactory): StageOptional<T> {
             return withItemType(TYPE_PLACEHOLDER, layoutId, { it as Any? == null }, viewHolderFactory::create)
         }
 
-        override fun withItemType(@LayoutRes layoutId: Int, itemTypePredicate: Predicate<Any>): BuilderStageFinal<T> {
+        override fun withItemType(@LayoutRes layoutId: Int, itemTypePredicate: Predicate<Any>): StageOptional<T> {
             return withItemType(nextItemType.getAndIncrement(), layoutId, itemTypePredicate) { tryWrap(it) }
         }
 
-        override fun withItemType(@LayoutRes layoutId: Int, clazz: Class<*>): BuilderStageFinal<T> {
+        override fun withItemType(@LayoutRes layoutId: Int, clazz: Class<*>): StageOptional<T> {
             return withItemType(nextItemType.getAndIncrement(), layoutId, clazz::isInstance) { tryWrap(it) }
         }
 
         override fun withItemType(@LayoutRes layoutId: Int,
                                   itemTypePredicate: Predicate<Any>,
-                                  @IdRes viewId: Int): BuilderStageFinal<T> {
+                                  @IdRes viewId: Int): StageOptional<T> {
             return withItemType(nextItemType.getAndIncrement(), layoutId, itemTypePredicate) { tryWrap(it, viewId) }
         }
 
         override fun withItemType(@LayoutRes layoutId: Int,
-                                  clazz: Class<*>, @IdRes viewId: Int): BuilderStageFinal<T> {
+                                  clazz: Class<*>, @IdRes viewId: Int): StageOptional<T> {
             return withItemType(nextItemType.getAndIncrement(), layoutId, clazz::isInstance) { tryWrap(it, viewId) }
         }
 
         override fun withItemType(@LayoutRes layoutId: Int,
                                   clazz: Class<*>,
-                                  viewHolderFactory: ViewHolderFactory): BuilderStageFinal<T> {
+                                  viewHolderFactory: ViewHolderFactory): StageOptional<T> {
             return withItemType(layoutId, clazz::isInstance, viewHolderFactory)
         }
 
         override fun withItemType(@LayoutRes layoutId: Int,
                                   itemTypePredicate: Predicate<Any>,
-                                  viewHolderFactory: ViewHolderFactory): BuilderStageFinal<T> {
+                                  viewHolderFactory: ViewHolderFactory): StageOptional<T> {
             return withItemType(nextItemType.getAndIncrement(), layoutId, itemTypePredicate, viewHolderFactory::create)
         }
 
-        override fun withPlaceholderType(@LayoutRes layoutId: Int, viewHolderFactory: VhFactory): BuilderStageFinal<T> =
+        override fun withPlaceholderType(@LayoutRes layoutId: Int, viewHolderFactory: VhFactory): StageOptional<T> =
                 withItemType(TYPE_PLACEHOLDER, layoutId, { it as Any? == null }, viewHolderFactory)
 
-        override fun withItemType(@LayoutRes layoutId: Int, clazz: KClass<*>): BuilderStageFinal<T> =
+        override fun withItemType(@LayoutRes layoutId: Int, clazz: KClass<*>): StageOptional<T> =
                 withItemType(layoutId, clazz::isInstance)
 
 
         override fun withItemType(@LayoutRes layoutId: Int,
                                   clazz: KClass<*>,
-                                  @IdRes viewId: Int): BuilderStageFinal<T> =
+                                  @IdRes viewId: Int): StageOptional<T> =
                 withItemType(layoutId, clazz::isInstance, viewId)
 
         override fun withItemType(@LayoutRes layoutId: Int,
                                   clazz: KClass<*>,
-                                  viewHolderFactory: VhFactory): BuilderStageFinal<T> =
+                                  viewHolderFactory: VhFactory): StageOptional<T> =
                 withItemType(nextItemType.getAndIncrement(), layoutId, clazz::isInstance, viewHolderFactory)
 
         override fun withItemType(@LayoutRes layoutId: Int,
                                   itemTypePredicate: Predicate<Any>,
-                                  viewHolderFactory: VhFactory): BuilderStageFinal<T> {
+                                  viewHolderFactory: VhFactory): StageOptional<T> {
             return withItemType(nextItemType.getAndIncrement(), layoutId, itemTypePredicate, viewHolderFactory)
         }
 
         private fun withItemType(type: Int,
                                  @LayoutRes layoutId: Int,
                                  itemTypePredicate: Predicate<Any>,
-                                 viewHolderFactory: VhFactory): BuilderStageFinal<T> {
+                                 viewHolderFactory: VhFactory): StageOptional<T> {
             if (itemDataMap[type] != null) {
                 throw IllegalArgumentException("Item type $type already registered.")
             }
@@ -710,37 +697,37 @@ class PagedAdapter<T> private constructor(
             return this
         }
 
-        override fun withItemIdMapper(mapper: ItemIdMapper<T>): BuilderStageFinal<T> = withItemIdMapper(mapper::getItemId)
+        override fun withItemIdMapper(mapper: ItemIdMapper<T>): StageOptional<T> = withItemIdMapper(mapper::getItemId)
 
-        override fun withOnItemClickListener(onItemClickListener: OnItemClickListener<T>): BuilderStageFinal<T> =
+        override fun withOnItemClickListener(onItemClickListener: OnItemClickListener<T>): StageOptional<T> =
                 withOnItemClickListener(onItemClickListener::onItemClick)
 
-        override fun withOnItemLongClickListener(onItemLongClickListener: OnItemLongClickListener<T>): BuilderStageFinal<T> =
+        override fun withOnItemLongClickListener(onItemLongClickListener: OnItemLongClickListener<T>): StageOptional<T> =
                 withOnItemLongClickListener(onItemLongClickListener::onItemLongClick)
 
-        override fun withOnLiveDataInvalidatedMarker(marker: Any): BuilderStageFinal<T> {
+        override fun withOnLiveDataInvalidatedMarker(marker: Any): StageOptional<T> {
             this.invalidationMarker = marker
             return this
         }
 
-        override fun withSelectionTracker(builder: SelectionTracker.BuilderStageFinal<T>): BuilderStageFinal<T> {
+        override fun withSelectionTracker(builder: SelectionTracker.StageObservers<T>): StageOptional<T> {
             this.selectionTrackerBuilder = builder
             return this
         }
 
         override fun withOnItemClickListener(
-                onItemClickListener: OnClickListener<T>): BuilderStageFinal<T> {
+                onItemClickListener: OnClickListener<T>): StageOptional<T> {
             this.onItemClickListener = onItemClickListener
             return this
         }
 
         override fun withOnItemLongClickListener(
-                onItemLongClickListener: OnLongClickListener<T>): BuilderStageFinal<T> {
+                onItemLongClickListener: OnLongClickListener<T>): StageOptional<T> {
             this.onItemLongClickListener = onItemLongClickListener
             return this
         }
 
-        override fun withItemIdMapper(mapper: IdMapper<T>): BuilderStageFinal<T> {
+        override fun withItemIdMapper(mapper: IdMapper<T>): StageOptional<T> {
             this.itemIdMapper = mapper
             return this
         }
@@ -798,6 +785,8 @@ class PagedAdapter<T> private constructor(
 
     /**
      * Listener that will be called when user clicks on item.
+     *
+     * @param T type of items
      */
     @FunctionalInterface
     interface OnItemClickListener<T> {
@@ -831,6 +820,8 @@ class PagedAdapter<T> private constructor(
 
     /**
      * Listener that will be called when user long clicks on item.
+     *
+     * @param T type of items
      */
     @FunctionalInterface
     interface OnItemLongClickListener<T> {
@@ -851,6 +842,8 @@ class PagedAdapter<T> private constructor(
     /**
      * Mapper that returns the stable ID for the item at position.
      *
+     * @param T type of items
+     *
      * @see RecyclerView.Adapter.getItemId
      * @see RecyclerView.Adapter.hasStableIds
      */
@@ -869,8 +862,7 @@ class PagedAdapter<T> private constructor(
     }
 }
 
-private class ViewHolderWrapper(viewHolder: ViewHolder<Any>, rootView: View) : RecyclerView.ViewHolder(rootView),
-        ViewHolder<Any> by viewHolder
+private class ViewHolderWrapper(viewHolder: ViewHolder<Any>, rootView: View) : RecyclerView.ViewHolder(rootView), ViewHolder<Any> by viewHolder
 
 /**
  * View holder provider. It determines what layout to inflate, inflates it and passes to wrapped provider.

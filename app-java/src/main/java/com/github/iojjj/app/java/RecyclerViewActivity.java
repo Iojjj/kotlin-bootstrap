@@ -18,7 +18,7 @@ import android.widget.Toast;
 import androidx.app.AppCompatActivityKt;
 import com.github.iojjj.app.core.BaseRecyclerViewActivity;
 import com.github.iojjj.bootstrap.adapters.adapter.PagedAdapter;
-import com.github.iojjj.bootstrap.adapters.data.ConfigurableLiveData;
+import com.github.iojjj.bootstrap.adapters.data.ConfigLiveData;
 import com.github.iojjj.bootstrap.adapters.data.Configuration;
 import com.github.iojjj.bootstrap.adapters.selection.selections.MutableSelection;
 import com.github.iojjj.bootstrap.adapters.selection.selections.Selection;
@@ -51,7 +51,7 @@ public final class RecyclerViewActivity extends BaseRecyclerViewActivity {
     @Override
     protected void initList(@NonNull RecyclerView list) {
         super.initList(list);
-//        list.addItemDecoration(PaddingItemDecoration.newBuilder()
+//        list.addItemDecoration(PaddingDecoration.newBuilder()
 //                .withStartPadding(getResources().getDimensionPixelSize(R.dimen.list_item_padding_start))
 //                .withEndPadding(getResources().getDimensionPixelSize(R.dimen.list_item_padding_end))
 //                .build());
@@ -64,13 +64,13 @@ public final class RecyclerViewActivity extends BaseRecyclerViewActivity {
     @NonNull
     private PagedAdapter<String> ensureAdapter() {
         if (mAdapter == null) {
-            final ConfigurableLiveData<PagedList<String>> liveData = ConfigurableLiveData.<Integer, String>ofPagedList()
+            final ConfigLiveData<PagedList<String>> liveData = ConfigLiveData.<Integer, String>ofPagedList()
                     .withDataSourceFactory(new StringDataSource.Factory())
                     .withPageSize(PAGE_SIZE)
                     .withFetchExecutor(ArchTaskExecutor.getIOThreadExecutor())
+                    .withObserveInstantly(true)
                     .build();
-            mAdapter = PagedAdapter.<String>newBuilder()
-                    .withLiveData(liveData)
+            mAdapter = PagedAdapter.newBuilderWith(liveData)
                     .withSimplePlaceholderType(R.layout.list_item_placeholder)
                     .withItemType(R.layout.list_item_string, String.class)
                     // when configuration changes (by any reason) this marker will be sent to ViewHolder's bind methods
@@ -89,7 +89,7 @@ public final class RecyclerViewActivity extends BaseRecyclerViewActivity {
                         return shouldSelect;
                     })
                     .withSelectionTracker(SelectionTracker.Factory.<String>newBuilder()
-                            .withMultipleSelection()
+                            .withSingleSelection()
                             .withSelectionPredicate((SelectionTracker.SelectionPredicate<String>) item -> !"Item 1".equals(item))
                             .addObserver(new SelectionTracker.SelectionAdapter<String>() {
                                 @Override
@@ -175,7 +175,7 @@ public final class RecyclerViewActivity extends BaseRecyclerViewActivity {
             callback.onResult(mData.subList(params.startPosition, params.startPosition + params.loadSize));
         }
 
-        private static final class Factory implements ConfigurableLiveData.Factory<DataSource<Integer, String>> {
+        private static final class Factory implements ConfigLiveData.Factory<DataSource<Integer, String>> {
 
             private List<String> mData;
 

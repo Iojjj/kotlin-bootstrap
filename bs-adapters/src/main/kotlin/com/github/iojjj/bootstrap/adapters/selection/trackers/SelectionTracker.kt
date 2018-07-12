@@ -8,6 +8,8 @@ import com.github.iojjj.bootstrap.utils.Predicate
  * Tracker used to store information about selected items.
  *
  * @property selection Object that holds selected items.
+ *
+ * @param T type of items
  */
 interface SelectionTracker<T> : Observable<SelectionTracker.SelectionObserver<T>> {
 
@@ -16,6 +18,9 @@ interface SelectionTracker<T> : Observable<SelectionTracker.SelectionObserver<T>
      */
     companion object Factory {
 
+        /**
+         * Marker sent to elements of adapter when selection changes.
+         */
         const val SELECTION_CHANGED_MARKER = "SELECTION_CHANGED"
 
         /**
@@ -23,9 +28,7 @@ interface SelectionTracker<T> : Observable<SelectionTracker.SelectionObserver<T>
          *
          * @return a new builder.
          */
-        fun <T> newBuilder(): BuilderStageType<T> {
-            return SelectionTrackerImpl.Builder()
-        }
+        fun <T> newBuilder(): StageType<T> = SelectionTrackerImpl.Builder()
     }
 
     val selection: Selection<T>
@@ -112,6 +115,8 @@ interface SelectionTracker<T> : Observable<SelectionTracker.SelectionObserver<T>
 
     /**
      * Observer that notified when selection state changes.
+     *
+     * @param T type of items
      */
     interface SelectionObserver<T> {
 
@@ -119,11 +124,15 @@ interface SelectionTracker<T> : Observable<SelectionTracker.SelectionObserver<T>
          * Called when selection started, i.e. a first item (or items) has been added to selection.
          *
          * This method called **before** [onSelectionChanged].
+         *
+         * @param selection selection triggered this observer
          */
         fun onSelectionStarted(selection: Selection<T>)
 
         /**
          * Called when selection changed, i.e. an item (or items) has been added to or removed from selection.
+         *
+         * @param selection selection triggered this observer
          */
         fun onSelectionChanged(selection: Selection<T>)
 
@@ -131,10 +140,17 @@ interface SelectionTracker<T> : Observable<SelectionTracker.SelectionObserver<T>
          * Called when selection stopped, i.e. a last item (or items) has been removed from selection.
          *
          * This method called **after** [onSelectionChanged].
+         *
+         * @param selection selection triggered this observer
          */
         fun onSelectionStopped(selection: Selection<T>)
     }
 
+    /**
+     * Empty implementation of [SelectionObserver].
+     *
+     * @param T type of items
+     */
     abstract class SelectionAdapter<T> : SelectionObserver<T> {
 
         override fun onSelectionStarted(selection: Selection<T>) {
@@ -153,6 +169,7 @@ interface SelectionTracker<T> : Observable<SelectionTracker.SelectionObserver<T>
     /**
      * Predicate used to check if item can be selected.
      */
+    @FunctionalInterface
     interface SelectionPredicate<T> {
 
         /**
@@ -166,29 +183,31 @@ interface SelectionTracker<T> : Observable<SelectionTracker.SelectionObserver<T>
     }
 
     /**
-     * First stage of building a [SelectionTracker].
+     * Builder stage that allows to choose selection type.
+     *
+     * @param T type of items
      */
-    interface BuilderStageType<T> {
+    interface StageType<T> {
 
         /**
          * Initialize selection tracker that allows to select only one item.
          *
-         * @return next stage of builder
+         * @return
          */
-        fun withSingleSelection(): BuilderStageSelectionPredicate<T>
+        fun withSingleSelection(): StageObservers<T>
 
         /**
          * Initialize selection tracker that allows to select multiple items.
          *
-         * @return next stage of builder
+         * @return same builder for chaining calls
          */
-        fun withMultipleSelection(): BuilderStageSelectionPredicate<T>
+        fun withMultipleSelection(): StageObservers<T>
     }
 
     /**
-     * Final stage of building a [SelectionTracker].
+     * Builder stage that allows to define optional settings.
      */
-    interface BuilderStageSelectionPredicate<T> {
+    interface StageObservers<T> {
 
         /**
          * Set predicate to filter items that can be selected.
@@ -197,7 +216,7 @@ interface SelectionTracker<T> : Observable<SelectionTracker.SelectionObserver<T>
          *
          * @return same builder for chaining calls
          */
-        fun withSelectionPredicate(selectionPredicate: SelectionPredicate<T>): BuilderStageFinal<T>
+        fun withSelectionPredicate(selectionPredicate: SelectionPredicate<T>): StageObservers<T> = withSelectionPredicate(selectionPredicate::test)
 
         /**
          * Set predicate to filter items that can be selected.
@@ -206,14 +225,7 @@ interface SelectionTracker<T> : Observable<SelectionTracker.SelectionObserver<T>
          *
          * @return same builder for chaining calls
          */
-        fun withSelectionPredicate(selectionPredicate: Predicate<T>): BuilderStageFinal<T>
-
-    }
-
-    /**
-     * Final stage of building a [SelectionTracker].
-     */
-    interface BuilderStageFinal<T> {
+        fun withSelectionPredicate(selectionPredicate: Predicate<T>): StageObservers<T>
 
         /**
          * Add an observer to receive selection changes callbacks.
@@ -222,7 +234,7 @@ interface SelectionTracker<T> : Observable<SelectionTracker.SelectionObserver<T>
          *
          * @return same builder for chaining calls
          */
-        fun addObserver(selectionObserver: SelectionObserver<T>): BuilderStageFinal<T>
+        fun addObserver(selectionObserver: SelectionObserver<T>): StageObservers<T>
 
         /**
          * Remove a previously added observer.
@@ -231,11 +243,11 @@ interface SelectionTracker<T> : Observable<SelectionTracker.SelectionObserver<T>
          *
          * @return same builder for chaining calls
          */
-        fun removeObserver(selectionObserver: SelectionObserver<T>): BuilderStageFinal<T>
+        fun removeObserver(selectionObserver: SelectionObserver<T>): StageObservers<T>
 
         /**
          * Clear all added observers.
          */
-        fun clearObservers(): BuilderStageFinal<T>
+        fun clearObservers(): StageObservers<T>
     }
 }

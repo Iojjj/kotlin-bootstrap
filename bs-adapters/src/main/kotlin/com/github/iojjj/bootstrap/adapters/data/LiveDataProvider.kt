@@ -6,8 +6,10 @@ import com.github.iojjj.bootstrap.utils.Observable
 
 /**
  * Base interface of `ComputableLiveData` that computes values when asked by their holders.
+ *
+ * @param T type of data
  */
-internal interface ConfigurableComputableLiveData<T> : Observable<() -> Unit> {
+internal interface LiveDataProvider<T> : Observable<() -> Unit> {
 
     /**
      * Compute value using provided [configuration].
@@ -26,10 +28,24 @@ internal interface ConfigurableComputableLiveData<T> : Observable<() -> Unit> {
     fun observe(owner: LifecycleOwner)
 }
 
-internal fun <T> LiveData<T>.toConfigurableLiveData(): ConfigurableComputableLiveData<T> {
+/**
+ * Wrap [LiveData] with [LiveDataWrapper].
+ *
+ * @receiver instance of [LiveData]
+ *
+ * @return a new instance of [LiveDataWrapper]
+ */
+internal fun <T> LiveData<T>.toConfigurableLiveData(): LiveDataWrapper<T> {
     return LiveDataWrapper(this)
 }
 
-internal fun <T> ConfigurableLiveData.Factory<T>.toConfigurableLiveData(): ConfigurableComputableLiveData<T> {
-    return FactoryLiveData(this)
+/**
+ * Wrap [ConfigLiveData.Factory] with [FactoryLiveDataProvider].
+ *
+ * @receiver instance of [ConfigLiveData.Factory]
+ *
+ * @return a new instance of [FactoryLiveDataProvider]
+ */
+internal fun <T> ConfigLiveData.Factory<T>.toConfigurableLiveData(): FactoryLiveDataProvider<T> {
+    return FactoryLiveDataProvider(this)
 }

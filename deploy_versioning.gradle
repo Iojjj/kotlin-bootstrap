@@ -1,0 +1,49 @@
+void generateProps() {
+    def versionProps = new Properties()
+    versionProps["version.major"] = "0"
+    versionProps["version.minor"] = "0"
+    versionProps["version.build"] = "0"
+    versionProps["version.type"] = ""
+    versionProps["version.type.build"] = "1"
+    saveVersionProps(versionProps)
+    println "Successfully generated"
+}
+
+String getLibVersion() {
+    def versionProps = getVersionProps()
+    def major = versionProps["version.major"]
+    def minor = versionProps["version.minor"]
+    def build = versionProps["version.build"] ?: "0"
+    def type = versionProps["version.type"]
+    def typeBuild = versionProps["version.type.build"] ?: "1"
+    if (type == null || type == "") {
+        return "$major.$minor.$build"
+    } else {
+        return "$major.$minor.$build-$type.$typeBuild"
+    }
+}
+
+Properties getVersionProps() {
+    def versionProps = new Properties()
+    def file = file(versionFileName)
+    if (!file.exists()) {
+        throw new FileNotFoundException("File not exists.")
+    }
+    file.withInputStream { versionProps.load(it) }
+    return versionProps
+}
+
+void saveVersionProps(Properties versionProps) {
+    file(versionFileName).withOutputStream { versionProps.store(it, null) }
+    project.setProperty("VERSION_NAME", getLibVersion())
+    println versionProps
+    println "New VERSION_NAME: ${project.getProperty("VERSION_NAME")}"
+}
+
+ext {
+    versionFileName = "$rootProject.projectDir/version.properties"
+    getLibVersion = this.&getLibVersion
+    generateProps = this.&generateProps
+    getVersionProps = this.&getVersionProps
+    saveVersionProps = this.&saveVersionProps
+}

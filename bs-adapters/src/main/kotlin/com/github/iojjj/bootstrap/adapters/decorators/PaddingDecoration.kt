@@ -1,4 +1,4 @@
-@file:Suppress("NOTHING_TO_INLINE")
+@file:Suppress("NOTHING_TO_INLINE", "unused")
 
 package com.github.iojjj.bootstrap.adapters.decorators
 
@@ -15,12 +15,12 @@ import android.view.View
 /**
  * Item padding decoration. Compatible with [LinearLayoutManager] and [GridLayoutManager] only.
  */
-class PaddingItemDecoration private constructor(@IntRange(from = 0) private val paddingStart: Int,
-                                                @IntRange(from = 0) private val paddingTop: Int,
-                                                @IntRange(from = 0) private val paddingEnd: Int,
-                                                @IntRange(from = 0) private val paddingBottom: Int,
-                                                @IntRange(from = 1) private val spanCount: Int,
-                                                @Orientation private val orientation: Int) : RecyclerView.ItemDecoration() {
+class PaddingDecoration private constructor(@IntRange(from = 0) private val paddingStart: Int,
+                                            @IntRange(from = 0) private val paddingTop: Int,
+                                            @IntRange(from = 0) private val paddingEnd: Int,
+                                            @IntRange(from = 0) private val paddingBottom: Int,
+                                            @IntRange(from = 1) private val spanCount: Int,
+                                            @Orientation private val orientation: Int) : RecyclerView.ItemDecoration() {
 
     private val paddingTopHalf: Int = paddingTop shr 1
     private val paddingBottomHalf: Int = paddingBottom shr 1
@@ -276,12 +276,12 @@ class PaddingItemDecoration private constructor(@IntRange(from = 0) private val 
         }
 
         /**
-         * Create a new instance of [PaddingItemDecoration] initialized with settings from this builder.
+         * Create a new instance of [PaddingDecoration] initialized with settings from this builder.
          *
-         * @return a new instance of [PaddingItemDecoration]
+         * @return a new instance of [PaddingDecoration]
          */
-        fun build(): PaddingItemDecoration {
-            return PaddingItemDecoration(paddingStart, paddingTop, paddingEnd, paddingBottom, spanCount, orientation)
+        fun build(): PaddingDecoration {
+            return PaddingDecoration(paddingStart, paddingTop, paddingEnd, paddingBottom, spanCount, orientation)
         }
     }
 
@@ -294,7 +294,7 @@ class PaddingItemDecoration private constructor(@IntRange(from = 0) private val 
 }
 
 /**
- * Create a new instance of [PaddingItemDecoration] using provided settings.
+ * Create a new instance of [PaddingDecoration] using provided settings.
  *
  * @param paddingStart `start` padding value
  * @param paddingStart `end` padding value
@@ -303,15 +303,15 @@ class PaddingItemDecoration private constructor(@IntRange(from = 0) private val 
  * @param spanCount number of spans (columns or row)
  * @param orientation orientation of `LayoutManager`
  *
- * @return a new instance of [PaddingItemDecoration]
+ * @return a new instance of [PaddingDecoration]
  */
 inline fun paddingDecorationOf(@IntRange(from = 0) paddingStart: Int = 0,
                                @IntRange(from = 0) paddingTop: Int = 0,
                                @IntRange(from = 0) paddingEnd: Int = 0,
                                @IntRange(from = 0) paddingBottom: Int = 0,
                                @IntRange(from = 1) spanCount: Int = 1,
-                               @PaddingItemDecoration.Orientation orientation: Int = PaddingItemDecoration.VERTICAL): PaddingItemDecoration {
-    return PaddingItemDecoration.newBuilder()
+                               @PaddingDecoration.Orientation orientation: Int = PaddingDecoration.VERTICAL): PaddingDecoration {
+    return PaddingDecoration.newBuilder()
             .withStartPadding(paddingStart)
             .withEndPadding(paddingEnd)
             .withTopPadding(paddingTop)
@@ -322,20 +322,20 @@ inline fun paddingDecorationOf(@IntRange(from = 0) paddingStart: Int = 0,
 }
 
 /**
- * Create a new instance of [PaddingItemDecoration] using provided settings.
+ * Create a new instance of [PaddingDecoration] using provided settings.
  *
- * @param paddingHorizontal `start` and `end` paddings value
- * @param paddingVertical `top` and `bottom` paddings value
+ * @param paddingHorizontal `start` and `end` padding value
+ * @param paddingVertical `top` and `bottom` padding value
  * @param spanCount number of spans (columns or row)
  * @param orientation orientation of `LayoutManager`
  *
- * @return a new instance of [PaddingItemDecoration]
+ * @return a new instance of [PaddingDecoration]
  */
 inline fun paddingDecorationOf(@IntRange(from = 0) paddingHorizontal: Int = 0,
                                @IntRange(from = 0) paddingVertical: Int = 0,
                                @IntRange(from = 1) spanCount: Int = 1,
-                               @PaddingItemDecoration.Orientation orientation: Int = PaddingItemDecoration.VERTICAL): PaddingItemDecoration {
-    return PaddingItemDecoration.newBuilder()
+                               @PaddingDecoration.Orientation orientation: Int = PaddingDecoration.VERTICAL): PaddingDecoration {
+    return PaddingDecoration.newBuilder()
             .withHorizontalPadding(paddingHorizontal)
             .withVerticalPadding(paddingVertical)
             .withSpanCount(spanCount)
@@ -344,18 +344,18 @@ inline fun paddingDecorationOf(@IntRange(from = 0) paddingHorizontal: Int = 0,
 }
 
 /**
- * Create a new instance of [PaddingItemDecoration] using provided settings.
+ * Create a new instance of [PaddingDecoration] using provided settings.
  *
- * @param padding all paddings value
+ * @param padding all padding value
  * @param spanCount number of spans (columns or row)
  * @param orientation orientation of `LayoutManager`
  *
- * @return a new instance of [PaddingItemDecoration]
+ * @return a new instance of [PaddingDecoration]
  */
 inline fun paddingDecorationOf(@IntRange(from = 0) padding: Int = 0,
                                @IntRange(from = 1) spanCount: Int = 1,
-                               @PaddingItemDecoration.Orientation orientation: Int = PaddingItemDecoration.VERTICAL): PaddingItemDecoration {
-    return PaddingItemDecoration.newBuilder()
+                               @PaddingDecoration.Orientation orientation: Int = PaddingDecoration.VERTICAL): PaddingDecoration {
+    return PaddingDecoration.newBuilder()
             .withPadding(padding)
             .withSpanCount(spanCount)
             .withOrientation(orientation)

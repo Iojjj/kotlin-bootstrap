@@ -5,7 +5,7 @@ import android.view.View
 import com.github.iojjj.bootstrap.adapters.adapter.PagedAdapter
 
 /**
- * ViewHolder interface.
+ * ViewHolder interface that must be implemented by views.
  */
 @Suppress("unused")
 interface ViewHolder<in T> {

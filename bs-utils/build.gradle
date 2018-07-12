@@ -1,6 +1,6 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
-apply plugin: 'com.vanniktech.maven.publish'
+apply from: '../deploy.gradle'
 
 android {
     compileSdkVersion sdk_version_compile
@@ -46,9 +46,4 @@ dependencies {
     implementation "com.android.support:appcompat-v7:$android_sdk_version_target"
 
     implementation "junit:junit:4.12"
-}
-
-mavenPublish {
-    releaseRepositoryUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
-    snapshotRepositoryUrl = "https://oss.sonatype.org/content/repositories/snapshots/"
 }

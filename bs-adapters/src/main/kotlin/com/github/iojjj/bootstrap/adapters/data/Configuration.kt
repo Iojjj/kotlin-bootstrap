@@ -1,23 +1,31 @@
+@file:Suppress("FunctionName")
+
 package com.github.iojjj.bootstrap.adapters.data
 
 import com.github.iojjj.bootstrap.utils.InvokableObservable
 import com.github.iojjj.bootstrap.utils.Observable
 import com.github.iojjj.bootstrap.utils.observableOf
 
+@Suppress("unused")
 /**
- * Wrapper over [Map] that notifies observers when it changed.
+ * Wrapper over [Map] that notifies observers when underlying map changes.
  *
- * @property notifyConfigurationChanges Flag indicates that observers should be notified once this configuration changed.
- * @property entries `Set` of all key/value pairs in this configuration.
+ * @property entries
  */
 class Configuration internal constructor(
+        private val delegate: MutableMap<String, Any?> = mutableMapOf(),
         private val observable: InvokableObservable<OnConfigurationChangedListener> = observableOf())
     :
         Observable<Configuration.OnConfigurationChangedListener> by observable {
 
-    private val delegate by lazy { HashMap<String, Any?>() }
-
+    /**
+     * Flag indicates that observers should be notified once this configuration changed.
+     */
     var notifyConfigurationChanges = true
+
+    /**
+     * `Set` of all key/value pairs in this configuration.
+     */
     val entries: Set<Map.Entry<String, Any?>> = delegate.entries
 
     /**
@@ -100,18 +108,14 @@ class Configuration internal constructor(
      *
      * @param config some map
      */
-    fun load(config: Array<Pair<String, *>>) {
-        load(config.toMap())
-    }
+    fun load(config: Array<Pair<String, *>>) = load(config.toMap())
 
     /**
      * Updates this configuration with key/value pairs.
      *
      * @param config some map
      */
-    fun load(config: Iterable<Pair<String, *>>) {
-        load(config.toMap())
-    }
+    fun load(config: Iterable<Pair<String, *>>) = load(config.toMap())
 
     /**
      * Removes all elements from this configuration.
@@ -149,16 +153,27 @@ class Configuration internal constructor(
     }
 
     /**
-     * Callback that will be called once [Configuration] changed.
+     * Callback that will be called once [Configuration] changes.
      */
     @FunctionalInterface
     interface OnConfigurationChangedListener {
 
         /**
-         * Called when an associated [configuration] changed.
+         * Called when an associated [configuration] changes.
          *
          * @param configuration instance of [Configuration]
          */
         fun onConfigurationChanged(configuration: Configuration)
     }
+}
+
+/**
+ * Create a new [OnConfigurationChangedListener] that wraps passed [block].
+ *
+ * @param block block that will be executed when configuration changes.
+ *
+ * @return a new instance of `OnConfigurationChangedListener`
+ */
+inline fun OnConfigurationChangedListener(crossinline block: (Configuration) -> Unit) = object : Configuration.OnConfigurationChangedListener {
+    override fun onConfigurationChanged(configuration: Configuration) = block(configuration)
 }

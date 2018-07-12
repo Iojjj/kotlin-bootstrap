@@ -6,6 +6,11 @@ import com.github.iojjj.bootstrap.adapters.selection.selections.MutableSelection
 import com.github.iojjj.bootstrap.adapters.selection.selections.SingleSelection
 import com.github.iojjj.bootstrap.utils.*
 
+/**
+ * Implementation of [SelectionTracker].
+ *
+ * @param T type of items
+ */
 internal class SelectionTrackerImpl<T>(
         override val selection: MutableSelection<T>,
         private val predicate: Predicate<T>,
@@ -61,14 +66,23 @@ internal class SelectionTrackerImpl<T>(
             return false
         }
         val wasEmpty = selection.isEmpty()
+        val singleItem = if (!wasEmpty && selection is SingleSelection) {
+            selection.iterator().next()
+        } else {
+            null
+        }
         val operation: (T) -> Boolean = if (selected) selection::add else selection::remove
         val changedItems = items
                 .filter(predicate)
                 .filter(operation)
+                .toMutableList()
         return if (changedItems.isNotEmpty()) {
             val becameEmpty = selection.isEmpty()
             if (wasEmpty && !becameEmpty) {
                 observable.notifyObservers { it.onSelectionStarted(selection) }
+            }
+            if (singleItem != null) {
+                changedItems.add(singleItem)
             }
             notifySelectionChanged(changedItems)
             observable.notifyObservers { it.onSelectionChanged(selection) }
@@ -90,9 +104,8 @@ internal class SelectionTrackerImpl<T>(
     }
 
     internal class Builder<T> :
-            SelectionTracker.BuilderStageType<T>,
-            SelectionTracker.BuilderStageSelectionPredicate<T>,
-            SelectionTracker.BuilderStageFinal<T> {
+            SelectionTracker.StageType<T>,
+            SelectionTracker.StageObservers<T> {
 
         internal lateinit var selection: MutableSelection<T>
         internal var selectionPredicate: Predicate<T> = Predicates.ALWAYS_TRUE
@@ -100,57 +113,57 @@ internal class SelectionTrackerImpl<T>(
         internal lateinit var callback: BatchingListUpdateCallback
         internal val observable by lazy { observableOf<SelectionTracker.SelectionObserver<T>>() }
 
-        override fun withSingleSelection(): SelectionTracker.BuilderStageSelectionPredicate<T> {
+        override fun withSingleSelection(): SelectionTracker.StageObservers<T> {
             selection = SingleSelection()
             return this
         }
 
-        override fun withMultipleSelection(): SelectionTracker.BuilderStageSelectionPredicate<T> {
+        override fun withMultipleSelection(): SelectionTracker.StageObservers<T> {
             selection = MultipleSelection()
             return this
         }
 
-        override fun withSelectionPredicate(selectionPredicate: SelectionTracker.SelectionPredicate<T>): SelectionTracker.BuilderStageFinal<T> {
-            this.selectionPredicate = selectionPredicate::test
-            return this
-        }
-
-        override fun withSelectionPredicate(selectionPredicate: Predicate<T>): SelectionTracker.BuilderStageFinal<T> {
+        override fun withSelectionPredicate(selectionPredicate: Predicate<T>): SelectionTracker.StageObservers<T> {
             this.selectionPredicate = selectionPredicate
             return this
         }
 
-        override fun addObserver(selectionObserver: SelectionTracker.SelectionObserver<T>): SelectionTracker.BuilderStageFinal<T> {
+        override fun addObserver(selectionObserver: SelectionTracker.SelectionObserver<T>): SelectionTracker.StageObservers<T> {
             observable.addObserver(selectionObserver)
             return this
         }
 
-        override fun removeObserver(selectionObserver: SelectionTracker.SelectionObserver<T>): SelectionTracker.BuilderStageFinal<T> {
+        override fun removeObserver(selectionObserver: SelectionTracker.SelectionObserver<T>): SelectionTracker.StageObservers<T> {
             observable.removeObserver(selectionObserver)
             return this
         }
 
-        override fun clearObservers(): SelectionTracker.BuilderStageFinal<T> {
+        override fun clearObservers(): SelectionTracker.StageObservers<T> {
             observable.clearObservers()
             return this
         }
     }
 }
 
-internal fun <T> SelectionTracker.BuilderStageFinal<T>.withPositionMapper(positionMapper: (T) -> Int): SelectionTracker.BuilderStageFinal<T> {
+/**
+ * Set position mapper that will map items to their adapter positions.
+ * @param positionMapper instance of mapper
+ * @return SelectionTracker.StageObservers<T>
+ */
+internal fun <T> SelectionTracker.StageObservers<T>.withPositionMapper(positionMapper: (T) -> Int): SelectionTracker.StageObservers<T> {
     val that = this as SelectionTrackerImpl.Builder<T>
     that.positionMapper = positionMapper
     return this
 }
 
-internal fun <T> SelectionTracker.BuilderStageFinal<T>.withListUpdateCallback(callback: BatchingListUpdateCallback):
-        SelectionTracker.BuilderStageFinal<T> {
+internal fun <T> SelectionTracker.StageObservers<T>.withListUpdateCallback(callback: BatchingListUpdateCallback):
+        SelectionTracker.StageObservers<T> {
     val that = this as SelectionTrackerImpl.Builder<T>
     that.callback = callback
     return this
 }
 
-internal fun <T> SelectionTracker.BuilderStageFinal<T>.build(): SelectionTracker<T> {
+internal fun <T> SelectionTracker.StageObservers<T>.build(): SelectionTracker<T> {
     val that = this as SelectionTrackerImpl.Builder<T>
     return SelectionTrackerImpl(that.selection, that.selectionPredicate, that.positionMapper, that.callback, that.observable)
 }

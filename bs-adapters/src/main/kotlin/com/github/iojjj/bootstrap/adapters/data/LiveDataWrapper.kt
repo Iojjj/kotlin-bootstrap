@@ -8,12 +8,14 @@ import com.github.iojjj.bootstrap.utils.Observable
 import com.github.iojjj.bootstrap.utils.observableOf
 
 /**
- * Implementation of [ConfigurableComputableLiveData] that wraps [LiveData] and uses it to compute values.
+ * Implementation of [LiveDataProvider] that wraps [LiveData] and uses it to compute values.
+ *
+ * @param T type of data
  */
-internal class LiveDataWrapper<T>(private val liveData: LiveData<T>,
+internal class LiveDataWrapper<T>(private val delegate: LiveData<T>,
                                   private val observable: InvokableObservable<() -> Unit> = observableOf())
     :
-        ConfigurableComputableLiveData<T>,
+        LiveDataProvider<T>,
         Observable<() -> Unit> by observable {
 
     private var data: T? = null
@@ -26,7 +28,7 @@ internal class LiveDataWrapper<T>(private val liveData: LiveData<T>,
 
     override fun observe(owner: LifecycleOwner) {
         // observe Android's LiveData object and send invalidation callbacks when it loads a new value
-        liveData.observe(owner, Observer {
+        delegate.observe(owner, Observer {
             data = it
             observable.notifyObservers { it() }
         })

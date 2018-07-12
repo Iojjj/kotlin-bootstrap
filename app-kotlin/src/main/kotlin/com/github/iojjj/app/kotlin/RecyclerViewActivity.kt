@@ -14,7 +14,7 @@ import android.widget.Toast
 import androidx.app.setSupportActionBar
 import com.github.iojjj.app.core.BaseRecyclerViewActivity
 import com.github.iojjj.bootstrap.adapters.adapter.PagedAdapter
-import com.github.iojjj.bootstrap.adapters.data.ConfigurableLiveData
+import com.github.iojjj.bootstrap.adapters.data.ConfigLiveData
 import com.github.iojjj.bootstrap.adapters.data.Configuration
 import com.github.iojjj.bootstrap.adapters.selection.selections.Selection
 import com.github.iojjj.bootstrap.adapters.selection.trackers.SelectionTracker
@@ -26,7 +26,7 @@ class RecyclerViewActivity : BaseRecyclerViewActivity() {
 
     private val backPressHandler = BackPressHandler.newInstance(2, TimeUnit.SECONDS, this::showOnBackPressPrompt)
     private val adapter: PagedAdapter<String> by lazy {
-        val liveData = ConfigurableLiveData.ofPagedList<Int, String>()
+        val liveData = ConfigLiveData.ofPagedList<Int, String>()
                 .withDataSourceFactory(StringDataSource.Factory)
                 .withPageSize(PAGE_SIZE)
                 .withFetchExecutor(ArchTaskExecutor.getIOThreadExecutor())
@@ -113,7 +113,7 @@ class RecyclerViewActivity : BaseRecyclerViewActivity() {
 
     private class StringDataSource(private val data: List<String>) : PositionalDataSource<String>() {
 
-        companion object Factory : ConfigurableLiveData.Factory<DataSource<Int, String>> {
+        companion object Factory : ConfigLiveData.Factory<DataSource<Int, String>> {
 
             private val data: List<String> by lazy { (0..DATA_SET_SIZE).map { "Item ${(it + 1)}" } }
 

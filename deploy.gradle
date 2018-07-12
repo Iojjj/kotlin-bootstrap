@@ -1,0 +1,139 @@
+apply plugin: 'com.jfrog.bintray'
+apply plugin: 'maven-publish'
+apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'org.jetbrains.dokka-android'
+apply from: "$rootProject.projectDir/deploy_versioning.gradle"
+apply from: "$rootProject.projectDir/keystore.gradle"
+
+ext {
+    groupId = 'com.github.iojjj.bootstrap'
+    artifactId = project.name
+
+    dependencyConfigurations = ['implementation', 'api']
+}
+
+group = groupId
+version = getLibVersion()
+
+bintray {
+    user = 'iojjj'
+    key = bintray_key
+
+    publications = ['Release']
+    configurations = ['archives']
+    publish = true //[Default: false] Whether version should be auto published after an upload
+    override = true //[Default: false] Whether to override version artifacts already published
+    pkg {
+        repo = 'kotlin-bootstrap'
+        name = project.name
+        websiteUrl = 'https://github.com/Iojjj/kotlin-bootstrap'
+        issueTrackerUrl = 'https://github.com/Iojjj/kotlin-bootstrap/issues'
+        vcsUrl = 'https://github.com/Iojjj/kotlin-bootstrap.git'
+        licenses = ['Apache-2.0']
+        publicDownloadNumbers = true
+
+        githubRepo = 'Iojjj/kotlin-bootstrap' //Optional Github repository
+        githubReleaseNotesFile = 'README.md' //Optional Github readme file
+    }
+}
+
+dokka {
+    outputFormat = 'javadoc'
+    outputDirectory = "$buildDir/javadoc"
+}
+
+if (project.hasProperty("kotlin")) { //Kotlin libraries
+    task sourcesJar(type: Jar) {
+        classifier = 'sources'
+        from android.sourceSets.main.java.srcDirs
+        from android.sourceSets.main.kotlin.srcDirs
+    }
+
+    task javadoc(type: Javadoc, dependsOn: dokka) {
+
+    }
+} else if (project.hasProperty("android")) { // Android libraries
+    task sourcesJar(type: Jar) {
+        classifier = 'sources'
+        from android.sourceSets.main.java.srcDirs
+    }
+
+    task javadoc(type: Javadoc, dependsOn: dokka) {
+        source = android.sourceSets.main.java.srcDirs
+        classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+    }
+} else { // Java libraries
+    task sourcesJar(type: Jar, dependsOn: classes) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
+    }
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from "$buildDir/javadoc"
+}
+
+publishing {
+    publications {
+        Debug(MavenPublication) {
+            artifact "$buildDir/outputs/aar/$project.name-debug.aar"
+            groupId groupId
+            artifactId project.name
+            version getLibVersion() + "-SNAPSHOT"
+
+            pom.withXml {
+                def dependenciesNode = asNode().appendNode('dependencies')
+                appendDependencies(dependenciesNode)
+            }
+        }
+        Release(MavenPublication) {
+            artifact "$buildDir/outputs/aar/$project.name-release.aar"
+            groupId groupId
+            artifactId project.name
+            version getLibVersion()
+
+            pom.withXml {
+                def dependenciesNode = asNode().appendNode('dependencies')
+                appendDependencies(dependenciesNode)
+            }
+        }
+    }
+}
+
+private void appendDependencies(dependenciesNode) {
+    ext.addDependency = { Dependency dep, String scope ->
+        if (dep.group == null || dep.version == null || dep.name == null || dep.name == "unspecified")
+            return // ignore invalid dependencies
+
+        final dependencyNode = dependenciesNode.appendNode('dependency')
+        dependencyNode.appendNode('groupId', dep.group)
+        dependencyNode.appendNode('artifactId', dep.name)
+        dependencyNode.appendNode('version', dep.version)
+        dependencyNode.appendNode('scope', scope)
+
+        if (!dep.transitive) {
+            // If this dependency is transitive, we should force exclude all its dependencies them from the POM
+            final exclusionNode = dependencyNode.appendNode('exclusions').appendNode('exclusion')
+            exclusionNode.appendNode('groupId', '*')
+            exclusionNode.appendNode('artifactId', '*')
+        } else if (!dep.properties.excludeRules.empty) {
+            // Otherwise add specified exclude rules
+            final exclusionNode = dependencyNode.appendNode('exclusions').appendNode('exclusion')
+            dep.properties.excludeRules.each { ExcludeRule rule ->
+                exclusionNode.appendNode('groupId', rule.group ?: '*')
+                exclusionNode.appendNode('artifactId', rule.module ?: '*')
+            }
+        }
+    }
+
+    // List all "api" dependencies (for new Gradle) as "compile" dependencies
+    configurations.api.getAllDependencies().each { dep -> addDependency(dep, "compile") }
+    // List all "implementation" dependencies (for new Gradle) as "runtime" dependencies
+    configurations.implementation.getAllDependencies().each { dep -> addDependency(dep, "runtime") }
+}
+
+artifacts {
+    archives javadocJar
+    archives sourcesJar
+}

@@ -2,6 +2,8 @@ package com.github.iojjj.bootstrap.adapters.selection.selections
 
 /**
  * Selection that contains selected items.
+ *
+ * @param T type of items
  */
 interface Selection<T> : Iterable<T> {
 

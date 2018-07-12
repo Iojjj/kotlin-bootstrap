@@ -3,8 +3,8 @@ package com.github.iojjj.bootstrap.adapters.viewholder
 import com.github.iojjj.bootstrap.adapters.adapter.PagedAdapter
 
 /**
- * `ViewHolder` for [Placeholder] object. Make sure you're implementing this interface when using placeholders.
+ * `ViewHolder` for [Placeholder] object that must be implemented by views when dealing with placeholders.
  *
- * @see PagedAdapter.BuilderStageFinal.withPlaceholderType
+ * @see PagedAdapter.StageOptional.withPlaceholderType
  */
 interface PlaceholderViewHolder : ViewHolder<Placeholder>

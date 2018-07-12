@@ -2,6 +2,8 @@ package com.github.iojjj.bootstrap.adapters.selection.selections
 
 /**
  * Mutable implementation of [Selection] that allows to modify itself.
+ *
+ * @param T type of items
  */
 interface MutableSelection<T> : Selection<T> {
 

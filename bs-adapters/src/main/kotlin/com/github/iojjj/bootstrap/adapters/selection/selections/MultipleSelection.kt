@@ -2,6 +2,8 @@ package com.github.iojjj.bootstrap.adapters.selection.selections
 
 /**
  * Implementation of [MutableSelection] that allows to select multiple items.
+ *
+ * @param T type of items
  */
 internal class MultipleSelection<T> : MutableSelection<T> {
 

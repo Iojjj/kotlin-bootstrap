@@ -1,5 +1,6 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
+apply from: '../deploy.gradle'
 
 android {
     compileSdkVersion sdk_version_compile

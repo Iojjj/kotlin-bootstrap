@@ -114,7 +114,7 @@ class BackPressHandler private constructor(private val timeoutMs: Long, private 
     /**
      * This method must be called from [Activity.onBackPressed].
      *
-     * @return `true` if application can be closed, `false` otherwise
+     * @return `true` if prompt message has been shown, `false` otherwise
      */
     override fun onBackPressed(): Boolean {
         val prevTime = lastTimePressed

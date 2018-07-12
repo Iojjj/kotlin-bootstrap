@@ -4,6 +4,7 @@ import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
 
+@kotlin.Suppress("unused")
 /**
  * Implementation of [TextWatcher] that invokes more user-friendly callback methods.
  *
@@ -15,9 +16,8 @@ import android.text.TextWatcher
  * @property insertedText text that was inserted
  * @property replacedText text that was replaced
  */
-class AdvancedTextWatcher private constructor(
-        private val observable: InvokableObservable<OnTextChangedListener> = observableOf()
-) :
+class AdvancedTextWatcher private constructor(private val observable: InvokableObservable<OnTextChangedListener> = observableOf())
+    :
         TextWatcher,
         Observable<AdvancedTextWatcher.OnTextChangedListener> by observable {
 
@@ -56,17 +56,17 @@ class AdvancedTextWatcher private constructor(
     override fun afterTextChanged(s: Editable) {
         when {
         // no text was replaced, this is an insertion
-            TextUtils.isEmpty(replacedText) -> observable.notifyObservers({
+            TextUtils.isEmpty(replacedText) -> observable.notifyObservers {
                 it.onTextInserted(beforeText!!, afterText!!, insertedText!!, beforeStart)
-            })
+            }
         // no text was inserted, this is removal
-            TextUtils.isEmpty(insertedText) -> observable.notifyObservers({
+            TextUtils.isEmpty(insertedText) -> observable.notifyObservers {
                 it.onTextRemoved(beforeText!!, afterText!!, replacedText!!, beforeStart)
-            })
+            }
         // this is replacement
-            else -> observable.notifyObservers({
+            else -> observable.notifyObservers {
                 it.onTextReplaced(beforeText!!, afterText!!, replacedText!!, insertedText!!, beforeStart, afterStart)
-            })
+            }
         }
         // text was changed
         if (!TextUtils.equals(beforeText, afterText)) {
@@ -125,6 +125,7 @@ class AdvancedTextWatcher private constructor(
      * Any custom listener that cares only about a subset of the methods of this listener can
      * simply subclass this adapter class instead of implementing the interface directly.
      */
+    @Suppress("unused")
     abstract class OnTextChangedAdapter : OnTextChangedListener {
 
         override fun onTextInserted(prevText: String, newText: String, insertedText: String, insertedPosition: Int) {
