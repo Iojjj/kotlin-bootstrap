@@ -76,28 +76,6 @@ class ConfigLiveData<T> private constructor(private val delegate: LiveDataProvid
         return super.getLiveData()
     }
 
-    /**
-     * Start observing `this` live data using provided [owner]. Observer will be automatically removed with [Lifecycle.Event.ON_DESTROY] event.
-     *
-     * @param owner instance of [LifecycleOwner]
-     * @param observer instance of [Observer] that will receive callbacks from `LiveData`
-     */
-    fun observe(owner: LifecycleOwner, observer: Observer<T?>) {
-        // observe Android's LiveData
-        liveData.observe(owner, observer)
-        // observe delegate implementation if it supports it
-        delegate.observe(owner)
-    }
-
-    /**
-     * Remove previously registered observer.
-     *
-     * @param observer instance of [Observer]
-     */
-    fun removeObserver(observer: Observer<T?>) {
-        liveData.removeObserver(observer)
-    }
-
     override fun compute(): T? {
         val notify = data == null
         if (notify) {
@@ -117,6 +95,28 @@ class ConfigLiveData<T> private constructor(private val delegate: LiveDataProvid
     override fun invalidate() {
         super.invalidate()
         onInvalidatedObservable.notifyObservers(OnInvalidatedObserver::onLiveDataInvalidated)
+    }
+
+    /**
+     * Start observing `this` live data using provided [owner]. Observer will be automatically removed with [Lifecycle.Event.ON_DESTROY] event.
+     *
+     * @param owner instance of [LifecycleOwner]
+     * @param observer instance of [Observer] that will receive callbacks from `LiveData`
+     */
+    fun observe(owner: LifecycleOwner, observer: Observer<T?>) {
+        // observe delegate implementation if it supports it
+        delegate.observe(owner)
+        // observe Android's LiveData
+        liveData.observe(owner, observer)
+    }
+
+    /**
+     * Remove previously registered observer.
+     *
+     * @param observer instance of [Observer]
+     */
+    fun removeObserver(observer: Observer<T?>) {
+        liveData.removeObserver(observer)
     }
 
     /**
@@ -325,12 +325,12 @@ class ConfigLiveData<T> private constructor(private val delegate: LiveDataProvid
         }
 
         override fun withLiveData(liveData: LiveData<T?>): StageExecutorSingle<T> {
-            this.delegate = liveData.toConfigurableLiveData()
+            this.delegate = liveData.toLiveDataProvider()
             return this
         }
 
         override fun withFactory(factory: Factory<T?>): StageExecutorSingle<T> {
-            this.delegate = factory.toConfigurableLiveData()
+            this.delegate = factory.toLiveDataProvider()
             return this
         }
 
@@ -417,6 +417,10 @@ class ConfigLiveData<T> private constructor(private val delegate: LiveDataProvid
          * @return same builder for chaining calls
          */
         fun withArray(data: Array<V>): StageExecutorPagedList<K, V> = withCollection(data.toList())
+
+        fun withLiveData(liveData: LiveData<out Collection<V>>): StageConfigPagedList<K, V> = withLiveData(liveData) { it }
+
+        fun <T> withLiveData(liveData: LiveData<out Collection<V>>, mapper: (Collection<V>) -> Collection<T>): StageConfigPagedList<K, T>
     }
 
     /**
@@ -551,17 +555,24 @@ class ConfigLiveData<T> private constructor(private val delegate: LiveDataProvid
             StageConfigPagedList<K, V>,
             StageFinalPagedList<K, V> {
 
-        private lateinit var factory: Factory<DataSource<K, V>>
+        private lateinit var delegate: LiveDataProvider<DataSource<K, V>>
         private lateinit var config: PagedList.Config
         private lateinit var fetchExecutor: Executor
         private var initialKey: K? = null
         private var initialConfig: Map<String, Any?>? = null
         private var boundaryCallback: PagedList.BoundaryCallback<V>? = null
         private var observeInstantly = false
+        private var liveData: LiveData<out Collection<V>>? = null
 
         override fun withDataSourceFactory(factory: Factory<DataSource<K, V>>): StageConfigPagedList<K, V> {
-            this.factory = factory
+            this.delegate = factory.toLiveDataProvider()
             return this
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        override fun <T> withLiveData(liveData: LiveData<out Collection<V>>, mapper: (Collection<V>) -> Collection<T>): StageConfigPagedList<K, T> {
+            this.delegate = liveData.toLiveDataProvider().map(mapper).map { ListDataSource.of(it) as DataSource<K, V> }
+            return this as StageConfigPagedList<K, T>
         }
 
         override fun withConfig(config: PagedList.Config): StageExecutorPagedList<K, V> {
@@ -602,7 +613,7 @@ class ConfigLiveData<T> private constructor(private val delegate: LiveDataProvid
         }
 
         override fun build(): ConfigLiveData<PagedList<V>?> {
-            val delegate = PagedListLiveDataProvider(factory,
+            val delegate = PagedListLiveDataProvider(delegate,
                     config,
                     fetchExecutor,
                     ArchTaskExecutor.getMainThreadExecutor(),

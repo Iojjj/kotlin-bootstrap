@@ -147,8 +147,10 @@ internal class SelectionTrackerImpl<T>(
 
 /**
  * Set position mapper that will map items to their adapter positions.
+ *
  * @param positionMapper instance of mapper
- * @return SelectionTracker.StageObservers<T>
+ *
+ * @return same builder for chaining calls
  */
 internal fun <T> SelectionTracker.StageObservers<T>.withPositionMapper(positionMapper: (T) -> Int): SelectionTracker.StageObservers<T> {
     val that = this as SelectionTrackerImpl.Builder<T>
@@ -156,6 +158,13 @@ internal fun <T> SelectionTracker.StageObservers<T>.withPositionMapper(positionM
     return this
 }
 
+/**
+ * Set list update callback that will be called when selection changes.
+ *
+ * @param callback instance of `BatchingListUpdateCallback`
+ *
+ * @return same builder for chaining calls
+ */
 internal fun <T> SelectionTracker.StageObservers<T>.withListUpdateCallback(callback: BatchingListUpdateCallback):
         SelectionTracker.StageObservers<T> {
     val that = this as SelectionTrackerImpl.Builder<T>
@@ -163,6 +172,11 @@ internal fun <T> SelectionTracker.StageObservers<T>.withListUpdateCallback(callb
     return this
 }
 
+/**
+ * Create a new instance of [SelectionTracker].
+ *
+ * @return a new instance of `SelectionTracker`
+ */
 internal fun <T> SelectionTracker.StageObservers<T>.build(): SelectionTracker<T> {
     val that = this as SelectionTrackerImpl.Builder<T>
     return SelectionTrackerImpl(that.selection, that.selectionPredicate, that.positionMapper, that.callback, that.observable)

@@ -16,7 +16,7 @@ import java.util.concurrent.Executor
  * @param V type of value
  */
 @SuppressLint("RestrictedApi")
-internal class PagedListLiveDataProvider<K, V>(private val factory: ConfigLiveData.Factory<DataSource<K, V>>,
+internal class PagedListLiveDataProvider<K, V>(private val delegate: LiveDataProvider<DataSource<K, V>>,
                                                private val config: PagedList.Config,
                                                private val fetchExecutor: Executor,
                                                private val mainExecutor: Executor,
@@ -31,12 +31,16 @@ internal class PagedListLiveDataProvider<K, V>(private val factory: ConfigLiveDa
     private var dataSource: DataSource<K, V>? = null
     private val invalidatedCallback = DataSource.InvalidatedCallback { observable.notifyObservers { it() } }
 
+    init {
+        delegate.addObserver { invalidatedCallback.onInvalidated() }
+    }
+
     @Suppress("UNCHECKED_CAST")
     override fun compute(configuration: Configuration): PagedList<V>? {
         val initialKey = list?.lastKey as? K ?: initialKey
         do {
             dataSource?.removeInvalidatedCallback(invalidatedCallback)
-            dataSource = factory.create(configuration)
+            dataSource = delegate.compute(configuration)
             dataSource!!.addInvalidatedCallback(invalidatedCallback)
             list = PagedList.Builder(dataSource!!, config)
                     .setInitialKey(initialKey)
@@ -49,6 +53,6 @@ internal class PagedListLiveDataProvider<K, V>(private val factory: ConfigLiveDa
     }
 
     override fun observe(owner: LifecycleOwner) {
-        /* no-op */
+        delegate.observe(owner)
     }
 }

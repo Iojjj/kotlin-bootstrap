@@ -35,7 +35,7 @@ internal interface LiveDataProvider<T> : Observable<() -> Unit> {
  *
  * @return a new instance of [LiveDataWrapper]
  */
-internal fun <T> LiveData<T>.toConfigurableLiveData(): LiveDataWrapper<T> {
+internal fun <T> LiveData<T>.toLiveDataProvider(): LiveDataWrapper<T> {
     return LiveDataWrapper(this)
 }
 
@@ -46,6 +46,10 @@ internal fun <T> LiveData<T>.toConfigurableLiveData(): LiveDataWrapper<T> {
  *
  * @return a new instance of [FactoryLiveDataProvider]
  */
-internal fun <T> ConfigLiveData.Factory<T>.toConfigurableLiveData(): FactoryLiveDataProvider<T> {
+internal fun <T> ConfigLiveData.Factory<T>.toLiveDataProvider(): FactoryLiveDataProvider<T> {
     return FactoryLiveDataProvider(this)
+}
+
+internal fun <T, V> LiveDataProvider<T>.map(mapper: (T) -> V): LiveDataProvider<V> {
+    return LiveDataMapper(this, mapper)
 }

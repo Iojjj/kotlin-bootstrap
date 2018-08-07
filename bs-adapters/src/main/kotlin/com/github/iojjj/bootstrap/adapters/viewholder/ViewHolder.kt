@@ -67,4 +67,4 @@ interface ViewHolder<in T> {
 }
 
 @Suppress("UNCHECKED_CAST")
-fun <T> ViewHolder<*>.cast(): ViewHolder<T> = this as ViewHolder<T>
+internal fun <T> ViewHolder<*>.cast(): ViewHolder<T> = this as ViewHolder<T>

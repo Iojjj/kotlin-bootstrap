@@ -2,6 +2,7 @@ package com.github.iojjj.app.java;
 
 import android.annotation.SuppressLint;
 import android.arch.core.executor.ArchTaskExecutor;
+import android.arch.lifecycle.MutableLiveData;
 import android.arch.paging.DataSource;
 import android.arch.paging.PagedList;
 import android.arch.paging.PositionalDataSource;
@@ -24,6 +25,8 @@ import com.github.iojjj.bootstrap.adapters.selection.selections.MutableSelection
 import com.github.iojjj.bootstrap.adapters.selection.selections.Selection;
 import com.github.iojjj.bootstrap.adapters.selection.trackers.SelectionTracker;
 import com.github.iojjj.bootstrap.utils.BackPressHandler;
+import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -64,8 +67,35 @@ public final class RecyclerViewActivity extends BaseRecyclerViewActivity {
     @NonNull
     private PagedAdapter<String> ensureAdapter() {
         if (mAdapter == null) {
+
+            final MutableLiveData<List<String>> data = new MutableLiveData<>();
+//            final ConfigLiveData<List<String>> testData = ConfigLiveData.<List<String>>ofSingle()
+//                    .withLiveData(data)
+//                    .withFetchExecutor(ArchTaskExecutor.getIOThreadExecutor())
+//                    .build();
+//            testData.observe(this, strings -> Log.d("TEST_DATA", strings == null ? "null" : Arrays.toString(strings.toArray())));
+
+            Observable.interval(1, TimeUnit.SECONDS)
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(count -> data.postValue(generateCollection(count)));
+
             final ConfigLiveData<PagedList<String>> liveData = ConfigLiveData.<Integer, String>ofPagedList()
-                    .withDataSourceFactory(new StringDataSource.Factory())
+                    .withLiveData(data, strings -> {
+                        final List<String> removed = mAdapter.getConfiguration().get(KEY_REMOVED);
+                        final String filter = mAdapter.getConfiguration().getOrDefault(PagedAdapter.CONFIG_KEY_FILTER, (String) null);
+                        if (filter == null && (removed == null || removed.isEmpty())) {
+                            return strings;
+                        }
+                        final List<String> filteredData = new ArrayList<>();
+                        for (final String d : strings) {
+                            final boolean acceptedByFilter = filter == null || d.toLowerCase().contains(filter.toLowerCase());
+                            final boolean acceptedByRemoved = removed == null || !removed.contains(d);
+                            if (acceptedByFilter && acceptedByRemoved) {
+                                filteredData.add(d);
+                            }
+                        }
+                        return filteredData;
+                    })
                     .withPageSize(PAGE_SIZE)
                     .withFetchExecutor(ArchTaskExecutor.getIOThreadExecutor())
                     .withObserveInstantly(true)
@@ -89,7 +119,7 @@ public final class RecyclerViewActivity extends BaseRecyclerViewActivity {
                         return shouldSelect;
                     })
                     .withSelectionTracker(SelectionTracker.Factory.<String>newBuilder()
-                            .withSingleSelection()
+                            .withMultipleSelection()
                             .withSelectionPredicate((SelectionTracker.SelectionPredicate<String>) item -> !"Item 1".equals(item))
                             .addObserver(new SelectionTracker.SelectionAdapter<String>() {
                                 @Override
@@ -111,6 +141,15 @@ public final class RecyclerViewActivity extends BaseRecyclerViewActivity {
                     .build();
         }
         return mAdapter;
+    }
+
+    private List<String> generateCollection(final long count) {
+        final List<String> data = new ArrayList<>();
+        final int size = (int) (count % 10);
+        for (int i = 0; i < size; i++) {
+            data.add(String.format(Locale.US, "Item %d", i + 1));
+        }
+        return data;
     }
 
     @Override
