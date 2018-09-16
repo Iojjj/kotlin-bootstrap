@@ -35,9 +35,8 @@ Properties getVersionProps() {
 
 void saveVersionProps(Properties versionProps) {
     file(versionFileName).withOutputStream { versionProps.store(it, null) }
-    project.setProperty("VERSION_NAME", getLibVersion())
     println versionProps
-    println "New VERSION_NAME: ${project.getProperty("VERSION_NAME")}"
+    println "New VERSION_NAME: ${getLibVersion()}"
 }
 
 ext {
