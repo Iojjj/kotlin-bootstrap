@@ -8,11 +8,8 @@ import android.util.AttributeSet;
 import com.github.iojjj.app.core.BaseStringView;
 import com.github.iojjj.bootstrap.adapters.adapter.AdapterUtils;
 import com.github.iojjj.bootstrap.adapters.adapter.PagedAdapter;
-import com.github.iojjj.bootstrap.adapters.viewholder.ViewHolder;
 
-import java.util.List;
-
-public final class StringView extends BaseStringView implements ViewHolder<String> {
+public final class StringView extends BaseStringView {
 
     public StringView(@NonNull final Context context) {
         super(context, "Java");
@@ -27,11 +24,6 @@ public final class StringView extends BaseStringView implements ViewHolder<Strin
     }
 
     @Override
-    public void onCreated(@NonNull final PagedAdapter<?> adapter) {
-        /* no-op */
-    }
-
-    @Override
     public void bind(@NonNull final PagedAdapter<?> adapter, final int position, final String item) {
         if (adapter.isFiltered()) {
             updateText(AdapterUtils.highlightQuery(item, adapter.getFilterQuery(), Color.RED));
@@ -39,10 +31,5 @@ public final class StringView extends BaseStringView implements ViewHolder<Strin
             updateText(item);
         }
         setActivated(adapter.<String>toTyped().getSelectionTracker().getSelection().contains(item));
-    }
-
-    @Override
-    public void bind(@NonNull final PagedAdapter<?> adapter, final int position, final String item, final List<Object> payload) {
-        bind(adapter, position, item);
     }
 }

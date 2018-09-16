@@ -27,9 +27,10 @@ class RecyclerViewActivity : BaseRecyclerViewActivity() {
     private val backPressHandler = BackPressHandler.newInstance(2, TimeUnit.SECONDS, this::showOnBackPressPrompt)
     private val adapter: PagedAdapter<String> by lazy {
         val liveData = ConfigLiveData.ofPagedList<Int, String>()
-                .withDataSourceFactory(StringDataSource.Factory)
+                .withDataSourceFactory(StringDataSource.DataFactory)
                 .withPageSize(PAGE_SIZE)
                 .withFetchExecutor(ArchTaskExecutor.getIOThreadExecutor())
+                .withNotifyExecutor(ArchTaskExecutor.getMainThreadExecutor())
                 .build()
         return@lazy PagedAdapter.newBuilderWith(liveData)
                 .withSimplePlaceholderType(R.layout.list_item_placeholder)
@@ -54,7 +55,11 @@ class RecyclerViewActivity : BaseRecyclerViewActivity() {
                         .withSelectionPredicate { it != "Item 1" }
                         .addObserver(object : SelectionTracker.SelectionAdapter<String>() {
                             override fun onSelectionStarted(selection: Selection<String>) = startSelection()
-                            override fun onSelectionChanged(selection: Selection<String>) = setActionModeTitle(selection.size.toString())
+                            override fun onSelectionChanged(selection: Selection<String>) {
+                                if (!selection.isEmpty()) {
+                                    setActionModeTitle(selection.size.toString())
+                                }
+                            }
                             override fun onSelectionStopped(selection: Selection<String>) = stopSelection()
                         })
                 )
@@ -85,7 +90,7 @@ class RecyclerViewActivity : BaseRecyclerViewActivity() {
     override fun onActionModeItemDeleteClicked() {
         val removed: MutableList<String> = adapter.configuration.getOrDefault(KEY_REMOVED) { mutableListOf() }
         removed.addAll(adapter.selectionTracker.selection.snapshot())
-        adapter.configuration.notifyConfigurationChanged()
+        adapter.liveData.invalidate()
     }
 
     override fun onActionModeDestroyed() {
@@ -113,7 +118,7 @@ class RecyclerViewActivity : BaseRecyclerViewActivity() {
 
     private class StringDataSource(private val data: List<String>) : PositionalDataSource<String>() {
 
-        companion object Factory : ConfigLiveData.Factory<DataSource<Int, String>> {
+        companion object DataFactory : ConfigLiveData.DataFactory<DataSource<Int, String>> {
 
             private val data: List<String> by lazy { (0..DATA_SET_SIZE).map { "Item ${(it + 1)}" } }
 

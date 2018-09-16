@@ -1,101 +1,57 @@
-@file:Suppress("FunctionName")
+@file:Suppress("FunctionName", "unused", "UNCHECKED_CAST")
 
 package com.github.iojjj.bootstrap.adapters.data
 
-import android.annotation.SuppressLint
-import android.arch.core.executor.ArchTaskExecutor
-import android.arch.lifecycle.*
+import android.arch.lifecycle.Lifecycle
+import android.arch.lifecycle.LifecycleOwner
+import android.arch.lifecycle.LiveData
+import android.arch.lifecycle.Observer
 import android.arch.paging.DataSource
 import android.arch.paging.PagedList
 import android.support.annotation.MainThread
-import com.github.iojjj.bootstrap.utils.observableOf
+import com.github.iojjj.bootstrap.utils.Observable
 import java.util.concurrent.Executor
 
 /**
- * Implementation of [ComputableLiveData] that has its own [Configuration] object and invalidates every time configuration changes.
+ * Implementation of [LiveData] that has its own [Configuration] object and invalidates every time configuration changes.
  *
  * @param T type of data
  */
-@Suppress("unused", "MemberVisibilityCanBePrivate")
-@SuppressLint("RestrictedApi")
-class ConfigLiveData<T> private constructor(private val delegate: LiveDataProvider<T>, observeInstantly: Boolean, fetchExecutor: Executor)
-    :
-        ComputableLiveData<T?>(fetchExecutor) {
+interface ConfigLiveData<T> {
 
-    @Suppress("unused")
-    companion object {
-
+    companion object Factory {
         /**
          * Create a new instance of [ConfigLiveData] builder intended to be used with single values.
          *
          * @return a new instance of `ConfigLiveData` builder
          */
-        @JvmStatic
-        fun <T> ofSingle(): StageDataSourceSingle<T> = SingleBuilder()
+        fun <T> ofSingle(): StageDataSourceSingle<T> = SingleLiveData.newBuilder()
 
         /**
          * Create a new instance of [ConfigLiveData] builder intended to be used with [PagedList]s.
          *
          * @return a new instance of `ConfigLiveData` builder
          */
-        @JvmStatic
-        fun <K, V> ofPagedList(): StageDataSourcePagedList<K, V> = PagedListBuilder()
+        fun <K, V> ofPagedList(): StageDataSourcePagedList<K, V> = PagedListLiveData.newBuilder()
     }
 
     /**
      * Configuration of `this` live data. Any changes to configuration will lead to [invalidate] method be invoked.
      */
-    val configuration: Configuration = Configuration()
-
+    val configuration: Configuration
     /**
      * Observable responsible for notifying about initial load events.
      */
-    val onInitialLoadObservable = observableOf<OnInitialLoadObserver<T>>()
-
+    val onInitialLoadObservable: Observable<OnInitialLoadObserver<T>>
     /**
      * Observable responsible for notifying about live data invalidation.
      */
-    val onInvalidatedObservable = observableOf<OnInvalidatedObserver>()
+    val onInvalidatedObservable: Observable<OnInvalidatedObserver>
 
-    private val configChangedListener = OnConfigurationChangedListener { invalidate() }
-    private val instantObserver by lazy { Observer<T?> { } }
-    private var data: T? = null
-
-    init {
-        configuration.addObserver(configChangedListener)
-        delegate.addObserver(this::invalidate)
-        if (observeInstantly) {
-            // add an empty observer to pre-load data
-            liveData.observeForever(instantObserver)
-        }
-    }
-
-    // overridden to suppress the error
-    @Suppress("RedundantOverride")
-    override fun getLiveData(): LiveData<T?> {
-        return super.getLiveData()
-    }
-
-    override fun compute(): T? {
-        val notify = data == null
-        if (notify) {
-            ArchTaskExecutor.getMainThreadExecutor().execute {
-                onInitialLoadObservable.notifyObservers { it.onStartLoading() }
-            }
-        }
-        data = delegate.compute(configuration)
-        if (notify) {
-            ArchTaskExecutor.getMainThreadExecutor().execute {
-                onInitialLoadObservable.notifyObservers { it.onStopLoading(data) }
-            }
-        }
-        return data
-    }
-
-    override fun invalidate() {
-        super.invalidate()
-        onInvalidatedObservable.notifyObservers(OnInvalidatedObserver::onLiveDataInvalidated)
-    }
+    /**
+     * Invalidates [ConfigLiveData].
+     */
+    fun invalidate()
 
     /**
      * Start observing `this` live data using provided [owner]. Observer will be automatically removed with [Lifecycle.Event.ON_DESTROY] event.
@@ -103,21 +59,32 @@ class ConfigLiveData<T> private constructor(private val delegate: LiveDataProvid
      * @param owner instance of [LifecycleOwner]
      * @param observer instance of [Observer] that will receive callbacks from `LiveData`
      */
-    fun observe(owner: LifecycleOwner, observer: Observer<T?>) {
-        // observe delegate implementation if it supports it
-        delegate.observe(owner)
-        // observe Android's LiveData
-        liveData.observe(owner, observer)
-    }
+    fun observe(owner: LifecycleOwner, observer: Observer<T?>)
 
     /**
      * Remove previously registered observer.
      *
      * @param observer instance of [Observer]
      */
-    fun removeObserver(observer: Observer<T?>) {
-        liveData.removeObserver(observer)
-    }
+    fun removeObserver(observer: Observer<T?>)
+
+    /**
+     * Maps this [ConfigLiveData] to a new one.
+     *
+     * @param mapper mapper that converts produced values
+     *
+     * @return a new instance of [ConfigLiveData]
+     */
+    fun <R> map(mapper: (T) -> R): ConfigLiveData<R> = map(Mapper { mapper(it) })
+
+    /**
+     * Maps this [ConfigLiveData] to a new one.
+     *
+     * @param mapper mapper that converts produced values
+     *
+     * @return a new instance of [ConfigLiveData]
+     */
+    fun <R> map(mapper: DataMapper<T, R>): ConfigLiveData<R>
 
     /**
      * Observer that called when [ConfigLiveData] loads data for the first time.
@@ -143,7 +110,6 @@ class ConfigLiveData<T> private constructor(private val delegate: LiveDataProvid
     /**
      * Empty implementation of [OnInitialLoadObserver].
      */
-    @Suppress("unused")
     abstract class OnInitialLoadAdapter<T> : OnInitialLoadObserver<T> {
 
         override fun onStartLoading() {
@@ -172,7 +138,7 @@ class ConfigLiveData<T> private constructor(private val delegate: LiveDataProvid
      * Factory used to produce values based on configuration.
      */
     @FunctionalInterface
-    interface Factory<T> {
+    interface DataFactory<T> {
 
         /**
          * Create a new value using provided [configuration].
@@ -184,13 +150,29 @@ class ConfigLiveData<T> private constructor(private val delegate: LiveDataProvid
         fun create(configuration: Configuration): T
     }
 
+    /**
+     * Mapper used to map values to a new type.
+     *
+     * @param T initial value type
+     * @param R converted value type
+     */
+    @FunctionalInterface
+    interface DataMapper<T, R> {
+
+        /**
+         * Map a value to a new type.
+         *
+         * @param value initial value
+         *
+         * @return converted value
+         */
+        fun map(value: T): R
+    }
 
     ///
     /// Single builder interface
     ///
 
-
-    @Suppress("unused")
     /**
      * Builder stage that allows to set data provider.
      *
@@ -205,7 +187,7 @@ class ConfigLiveData<T> private constructor(private val delegate: LiveDataProvid
          *
          * @return same builder for chaining calls
          */
-        fun withJust(data: T?): StageExecutorSingle<T>
+        fun withJust(data: T?): StageFetchExecutorSingle<T>
 
         /**
          * Set a live data object that will be used as data provider for [ConfigLiveData].
@@ -214,7 +196,16 @@ class ConfigLiveData<T> private constructor(private val delegate: LiveDataProvid
          *
          * @return same builder for chaining calls
          */
-        fun withLiveData(liveData: LiveData<T?>): StageExecutorSingle<T>
+        fun withLiveData(liveData: LiveData<T?>): StageFetchExecutorSingle<T>
+
+        /**
+         * Set a factory that will be used as data provider for [ConfigLiveData].
+         *
+         * @param dataFactory factory that produces values
+         *
+         * @return same builder for chaining calls
+         */
+        fun withDataFactory(dataFactory: DataFactory<T?>): StageFetchExecutorSingle<T>
 
         /**
          * Set a factory that will be used as data provider for [ConfigLiveData].
@@ -223,16 +214,7 @@ class ConfigLiveData<T> private constructor(private val delegate: LiveDataProvid
          *
          * @return same builder for chaining calls
          */
-        fun withFactory(factory: Factory<T?>): StageExecutorSingle<T>
-
-        /**
-         * Set a factory that will be used as data provider for [ConfigLiveData].
-         *
-         * @param factory factory that produces values
-         *
-         * @return same builder for chaining calls
-         */
-        fun withFactory(factory: (Configuration) -> T?): StageExecutorSingle<T> = withFactory(Factory { factory(it) })
+        fun withDataFactory(factory: (Configuration) -> T?): StageFetchExecutorSingle<T> = withDataFactory(Factory { factory(it) })
 
     }
 
@@ -241,7 +223,7 @@ class ConfigLiveData<T> private constructor(private val delegate: LiveDataProvid
      *
      * @param T type of data
      */
-    interface StageExecutorSingle<T> {
+    interface StageFetchExecutorSingle<T> {
 
         /**
          * Set executor that will be used to fetch data from data provider.
@@ -250,7 +232,24 @@ class ConfigLiveData<T> private constructor(private val delegate: LiveDataProvid
          *
          * @return same builder for chaining calls
          */
-        fun withFetchExecutor(executor: Executor): StageFinalSingle<T>
+        fun withFetchExecutor(executor: Executor): StageNotifyExecutorSingle<T>
+    }
+
+    /**
+     * Builder stage that allows to set notify executor.
+     *
+     * @param T type of data
+     */
+    interface StageNotifyExecutorSingle<T> {
+
+        /**
+         * Set executor that will be used to notify when data loaded.
+         *
+         * @param executor instance of [Executor]
+         *
+         * @return same builder for chaining calls
+         */
+        fun withNotifyExecutor(executor: Executor): StageFinalSingle<T>
     }
 
     /**
@@ -305,62 +304,8 @@ class ConfigLiveData<T> private constructor(private val delegate: LiveDataProvid
     }
 
     ///
-    /// Single builder implementation
-    ///
-
-    private class SingleBuilder<T>
-        :
-            StageDataSourceSingle<T>,
-            StageExecutorSingle<T>,
-            StageFinalSingle<T> {
-
-        private lateinit var delegate: LiveDataProvider<T?>
-        private lateinit var fetchExecutor: Executor
-        private var observeInstantly = false
-        private var initialConfig: Map<String, Any?>? = null
-
-        override fun withJust(data: T?): StageExecutorSingle<T> {
-            this.delegate = SingleItemLiveDataProvider(data)
-            return this
-        }
-
-        override fun withLiveData(liveData: LiveData<T?>): StageExecutorSingle<T> {
-            this.delegate = liveData.toLiveDataProvider()
-            return this
-        }
-
-        override fun withFactory(factory: Factory<T?>): StageExecutorSingle<T> {
-            this.delegate = factory.toLiveDataProvider()
-            return this
-        }
-
-        override fun withFetchExecutor(executor: Executor): StageFinalSingle<T> {
-            this.fetchExecutor = executor
-            return this
-        }
-
-        override fun withObserveInstantly(observeInstantly: Boolean): StageFinalSingle<T> {
-            this.observeInstantly = observeInstantly
-            return this
-        }
-
-        override fun withInitialConfig(initialConfig: Map<String, Any?>): StageFinalSingle<T> {
-            this.initialConfig = initialConfig
-            return this
-        }
-
-        override fun build(): ConfigLiveData<T?> {
-            return ConfigLiveData(delegate, observeInstantly, fetchExecutor).apply {
-                initialConfig?.let(configuration::load)
-            }
-        }
-    }
-
-    ///
     /// PagedList builder interface
     ///
-
-    @Suppress("unused", "UNCHECKED_CAST")
     /**
      * Builder stage that allows to set data provider.
      *
@@ -382,11 +327,11 @@ class ConfigLiveData<T> private constructor(private val delegate: LiveDataProvid
         /**
          * Set a data source factory that will be used as data provider for [ConfigLiveData].
          *
-         * @param factory factory that produces [DataSource]s
+         * @param dataFactory factory that produces [DataSource]s
          *
          * @return same builder for chaining calls
          */
-        fun withDataSourceFactory(factory: Factory<DataSource<K, V>>): StageConfigPagedList<K, V>
+        fun withDataSourceFactory(dataFactory: DataFactory<DataSource<K, V>>): StageConfigPagedList<K, V>
 
         /**
          * Set a data source factory that will be used as data provider for [ConfigLiveData].
@@ -405,7 +350,7 @@ class ConfigLiveData<T> private constructor(private val delegate: LiveDataProvid
          *
          * @return same builder for chaining calls
          */
-        fun withCollection(data: Collection<V>): StageExecutorPagedList<K, V> =
+        fun withCollection(data: Collection<V>): StageFetchExecutorPagedList<K, V> =
                 withDataSourceFactory { listDataSourceOf(data.toList()) as DataSource<K, V> }
                         .withPageSize(data.size)
 
@@ -416,11 +361,16 @@ class ConfigLiveData<T> private constructor(private val delegate: LiveDataProvid
          *
          * @return same builder for chaining calls
          */
-        fun withArray(data: Array<V>): StageExecutorPagedList<K, V> = withCollection(data.toList())
+        fun withArray(data: Array<V>): StageFetchExecutorPagedList<K, V> = withCollection(data.toList())
 
-        fun withLiveData(liveData: LiveData<out Collection<V>>): StageConfigPagedList<K, V> = withLiveData(liveData) { it }
-
-        fun <T> withLiveData(liveData: LiveData<out Collection<V>>, mapper: (Collection<V>) -> Collection<T>): StageConfigPagedList<K, T>
+        /**
+         * Set [LiveData] that will be used as data provider for [ConfigLiveData].
+         *
+         * @param liveData instance of [LiveData]
+         *
+         * @return same builder for chaining calls
+         */
+        fun withLiveData(liveData: LiveData<out Collection<V>>): StageConfigPagedList<K, V>
     }
 
     /**
@@ -438,7 +388,7 @@ class ConfigLiveData<T> private constructor(private val delegate: LiveDataProvid
          *
          * @return same builder for chaining calls
          */
-        fun withConfig(config: PagedList.Config): StageExecutorPagedList<K, V>
+        fun withConfig(config: PagedList.Config): StageFetchExecutorPagedList<K, V>
 
         /**
          * Set a page size for [PagedList].
@@ -449,7 +399,7 @@ class ConfigLiveData<T> private constructor(private val delegate: LiveDataProvid
          *
          * @see PagedList.Config.Builder.setPageSize
          */
-        fun withPageSize(pageSize: Int): StageExecutorPagedList<K, V>
+        fun withPageSize(pageSize: Int): StageFetchExecutorPagedList<K, V>
     }
 
     /**
@@ -458,7 +408,7 @@ class ConfigLiveData<T> private constructor(private val delegate: LiveDataProvid
      * @param K type of key
      * @param V type of value
      */
-    interface StageExecutorPagedList<K, V> {
+    interface StageFetchExecutorPagedList<K, V> {
 
         /**
          * Set executor that will be used to fetch data from data provider.
@@ -467,7 +417,25 @@ class ConfigLiveData<T> private constructor(private val delegate: LiveDataProvid
          *
          * @return same builder for chaining calls
          */
-        fun withFetchExecutor(executor: Executor): StageFinalPagedList<K, V>
+        fun withFetchExecutor(executor: Executor): StageNotifyExecutorPagedList<K, V>
+    }
+
+    /**
+     * Builder stage that allows to set notify executor.
+     *
+     * @param K type of key
+     * @param V type of value
+     */
+    interface StageNotifyExecutorPagedList<K, V> {
+
+        /**
+         * Set executor that will be used to notify data loaded.
+         *
+         * @param executor instance of [Executor]
+         *
+         * @return same builder for chaining calls
+         */
+        fun withNotifyExecutor(executor: Executor): StageFinalPagedList<K, V>
     }
 
     /**
@@ -543,88 +511,8 @@ class ConfigLiveData<T> private constructor(private val delegate: LiveDataProvid
          */
         fun build(): ConfigLiveData<PagedList<V>?>
     }
-
-    ///
-    /// PagedList builder implementation
-    ///
-
-    private class PagedListBuilder<K, V>
-        :
-            StageDataSourcePagedList<K, V>,
-            StageExecutorPagedList<K, V>,
-            StageConfigPagedList<K, V>,
-            StageFinalPagedList<K, V> {
-
-        private lateinit var delegate: LiveDataProvider<DataSource<K, V>>
-        private lateinit var config: PagedList.Config
-        private lateinit var fetchExecutor: Executor
-        private var initialKey: K? = null
-        private var initialConfig: Map<String, Any?>? = null
-        private var boundaryCallback: PagedList.BoundaryCallback<V>? = null
-        private var observeInstantly = false
-        private var liveData: LiveData<out Collection<V>>? = null
-
-        override fun withDataSourceFactory(factory: Factory<DataSource<K, V>>): StageConfigPagedList<K, V> {
-            this.delegate = factory.toLiveDataProvider()
-            return this
-        }
-
-        @Suppress("UNCHECKED_CAST")
-        override fun <T> withLiveData(liveData: LiveData<out Collection<V>>, mapper: (Collection<V>) -> Collection<T>): StageConfigPagedList<K, T> {
-            this.delegate = liveData.toLiveDataProvider().map(mapper).map { ListDataSource.of(it) as DataSource<K, V> }
-            return this as StageConfigPagedList<K, T>
-        }
-
-        override fun withConfig(config: PagedList.Config): StageExecutorPagedList<K, V> {
-            this.config = config
-            return this
-        }
-
-        override fun withPageSize(pageSize: Int): StageExecutorPagedList<K, V> {
-            this.config = PagedList.Config.Builder()
-                    .setPageSize(pageSize)
-                    .build()
-            return this
-        }
-
-        override fun withFetchExecutor(executor: Executor): StageFinalPagedList<K, V> {
-            this.fetchExecutor = executor
-            return this
-        }
-
-        override fun withInitialKey(initialKey: K): StageFinalPagedList<K, V> {
-            this.initialKey = initialKey
-            return this
-        }
-
-        override fun withInitialConfig(initialConfig: Map<String, Any?>): StageFinalPagedList<K, V> {
-            this.initialConfig = initialConfig
-            return this
-        }
-
-        override fun withBoundaryCallback(boundaryCallback: PagedList.BoundaryCallback<V>): StageFinalPagedList<K, V> {
-            this.boundaryCallback = boundaryCallback
-            return this
-        }
-
-        override fun withObserveInstantly(observeInstantly: Boolean): PagedListBuilder<K, V> {
-            this.observeInstantly = observeInstantly
-            return this
-        }
-
-        override fun build(): ConfigLiveData<PagedList<V>?> {
-            val delegate = PagedListLiveDataProvider(delegate,
-                    config,
-                    fetchExecutor,
-                    ArchTaskExecutor.getMainThreadExecutor(),
-                    initialKey,
-                    boundaryCallback)
-            return ConfigLiveData(delegate, observeInstantly, fetchExecutor).apply {
-                initialConfig?.let(configuration::load)
-            }
-        }
-    }
 }
+
 
 /**
  * Create a new [OnInvalidatedObserver] that wraps passed [block].
@@ -638,12 +526,25 @@ inline fun OnInvalidatedObserver(crossinline block: () -> Unit) = object : Confi
 }
 
 /**
- * Create a new [ConfigLiveData.Factory] that wraps passed [block].
+ * Create a new [ConfigLiveData.DataFactory] that wraps passed [block].
  *
- * @param block block that will be executed when [ConfigLiveData.Factory.create] method called.
+ * @param block block that will be executed when [ConfigLiveData.DataFactory.create] method called.
  *
  * @return a new instance of `ConfigLiveData.Factory`
  */
-inline fun <T> Factory(crossinline block: (Configuration) -> T) = object : ConfigLiveData.Factory<T> {
+inline fun <T> Factory(crossinline block: (Configuration) -> T) = object : ConfigLiveData.DataFactory<T> {
     override fun create(configuration: Configuration): T = block(configuration)
+}
+
+/**
+ * Create a new [ConfigLiveData.DataMapper] that wraps passed [block].
+ *
+ * @param block block that will be executed when value must be converted to a new type
+ *
+ * @return a new instance of `ConfigLiveData.DataMapper`
+ */
+inline fun <T, R> Mapper(crossinline block: (T) -> R) = object : ConfigLiveData.DataMapper<T, R> {
+    override fun map(value: T): R {
+        return block(value)
+    }
 }

@@ -1,53 +1,15 @@
-apply plugin: 'com.android.library'
-apply plugin: 'kotlin-android'
-apply from: '../deploy.gradle'
-
-android {
-    compileSdkVersion sdk_version_compile
-    defaultConfig {
-        minSdkVersion sdk_version_min
-        targetSdkVersion sdk_version_target
-
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-
-    }
-
-    buildTypes {
-        debug {
-            testCoverageEnabled false
-        }
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
-    }
-
-    sourceSets {
-        main.java.srcDirs += 'src/main/kotlin'
-        test.java.srcDirs += 'src/test/kotlin'
-        androidTest.java.srcDirs += 'src/androidTest/kotlin'
-    }
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
-
-    resourcePrefix "bs_"
-}
+apply from: "$rootProject.projectDir/bs-library-non-core.gradle"
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    // submodules
+    // Submodules
     implementation project(':bs-utils')
 
-    // kotlin
-    api "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    // Kotlin
     implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
 
-    // android
-    api "com.android.support:recyclerview-v7:$android_sdk_version_target"
-    api "android.arch.paging:runtime:$android_padging_version"
-    implementation "androidx.core:core-ktx:$android_ktx_version"
+    // AppCompat
+    api "com.android.support:recyclerview-v7:$android_version_support"
+    api "android.arch.paging:runtime:$android_version_pagination"
+    implementation "androidx.core:core-ktx:$android_version_ktx"
 }

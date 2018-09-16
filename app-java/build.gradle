@@ -33,8 +33,8 @@ dependencies {
     implementation project(':bs-adapters')
     implementation project(':bs-utils')
 
-    implementation "com.android.support:appcompat-v7:$android_sdk_version_target"
-    implementation "com.android.support:design:$android_sdk_version_target"
+    implementation "com.android.support:appcompat-v7:$android_version_support"
+    implementation "com.android.support:design:$android_version_support"
 
     implementation "io.reactivex.rxjava2:rxandroid:$lib_version_rxandroid"
     implementation "io.reactivex.rxjava2:rxjava:$lib_version_rxjava2"

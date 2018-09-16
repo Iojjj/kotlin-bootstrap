@@ -1,0 +1,7 @@
+apply from: "$rootProject.projectDir/bs-library.gradle"
+
+dependencies {
+    api "junit:junit:$test_version_junit"
+    api "org.mockito:mockito-core:$test_version_mockito"
+    api "org.robolectric:robolectric:$test_version_robolectric"
+}

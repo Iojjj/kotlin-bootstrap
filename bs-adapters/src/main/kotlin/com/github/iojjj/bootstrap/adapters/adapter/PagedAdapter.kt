@@ -29,8 +29,8 @@ import com.github.iojjj.bootstrap.adapters.viewholder.Placeholder
 import com.github.iojjj.bootstrap.adapters.viewholder.PlaceholderViewHolder
 import com.github.iojjj.bootstrap.adapters.viewholder.ViewHolder
 import com.github.iojjj.bootstrap.adapters.viewholder.cast
-import com.github.iojjj.bootstrap.utils.Predicate
-import com.github.iojjj.bootstrap.utils.StateAware
+import com.github.iojjj.bootstrap.beta.utils.StateAware
+import com.github.iojjj.bootstrap.core.Predicate
 import org.jetbrains.annotations.Contract
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.reflect.KClass
@@ -260,7 +260,7 @@ class PagedAdapter<T> private constructor(
     }
 
     /**
-     * Filter adapter with given query. It's up to [ConfigLiveData.Factory] to perform all filtering though. When it receive [Configuration]
+     * Filter adapter with given query. It's up to [ConfigLiveData.DataFactory] to perform all filtering though. When it receive [Configuration]
      * the passed `query` can be accessed via [CONFIG_KEY_FILTER] key.
      *
      * The contract of this method: pass any value to start filtering, pass `null` to clear the filter.

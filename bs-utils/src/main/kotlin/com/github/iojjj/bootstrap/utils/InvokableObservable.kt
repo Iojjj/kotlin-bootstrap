@@ -2,10 +2,11 @@
 
 package com.github.iojjj.bootstrap.utils
 
+import com.github.iojjj.bootstrap.core.Consumer
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**
- * Simple interface of `Observable` pattern.
+ * Implementation of [Observable] that allows to notify observers.
  *
  * @param T type of observer
  */

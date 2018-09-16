@@ -1,10 +1,9 @@
 package com.github.iojjj.bootstrap.utils
 
-import junit.framework.Assert.fail
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
+import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
+import org.mockito.Mockito.*
 import java.util.concurrent.TimeUnit
 
 /**
@@ -12,43 +11,23 @@ import java.util.concurrent.TimeUnit
  */
 class BackPressHandlerTest {
 
-    private lateinit var testCallback: TestCallback
+    private lateinit var testCallback: BackPressHandler.Callback
 
     @Before
     fun setUp() {
-        testCallback = TestCallback()
+        testCallback = mock(BackPressHandler.Callback::class.java)
     }
 
     @Test
     fun onBackPressedMs() {
         val handler = BackPressHandler.newInstance(1000L, testCallback)
-        assertFalse(handler.onBackPressed())
-        assertTrue(testCallback.showPromptCalled)
-        testCallback.reset()
-        Thread.sleep(1100)
-        assertFalse(handler.onBackPressed())
-        assertTrue(testCallback.showPromptCalled)
-        testCallback.reset()
-        Thread.sleep(300)
-        assertTrue(handler.onBackPressed())
-        assertFalse(testCallback.showPromptCalled)
-        testCallback.reset()
+        testBackPressed(handler)
     }
 
     @Test
     fun onBackPressedUnits() {
         val handler = BackPressHandler.newInstance(1, TimeUnit.SECONDS, testCallback)
-        assertFalse(handler.onBackPressed())
-        assertTrue(testCallback.showPromptCalled)
-        testCallback.reset()
-        Thread.sleep(1100)
-        assertFalse(handler.onBackPressed())
-        assertTrue(testCallback.showPromptCalled)
-        testCallback.reset()
-        Thread.sleep(300)
-        assertTrue(handler.onBackPressed())
-        assertFalse(testCallback.showPromptCalled)
-        testCallback.reset()
+        testBackPressed(handler)
     }
 
     @Test
@@ -68,16 +47,14 @@ class BackPressHandlerTest {
         }
     }
 
-    private class TestCallback : BackPressHandler.Callback {
-
-        var showPromptCalled = false
-
-        override fun onShowPrompt() {
-            showPromptCalled = true
-        }
-
-        fun reset() {
-            showPromptCalled = false
-        }
+    private fun testBackPressed(handler: BackPressHandler) {
+        assertTrue(handler.onBackPressed())
+        verify(testCallback, times(1)).onShowPrompt()
+        Thread.sleep(1100)
+        assertTrue(handler.onBackPressed())
+        verify(testCallback, times(2)).onShowPrompt()
+        Thread.sleep(300)
+        assertFalse(handler.onBackPressed())
+        verify(testCallback, times(2)).onShowPrompt()
     }
 }

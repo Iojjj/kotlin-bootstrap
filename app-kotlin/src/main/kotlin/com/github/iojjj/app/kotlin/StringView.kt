@@ -6,9 +6,8 @@ import android.util.AttributeSet
 import com.github.iojjj.app.core.BaseStringView
 import com.github.iojjj.bootstrap.adapters.adapter.PagedAdapter
 import com.github.iojjj.bootstrap.adapters.adapter.highlightQuery
-import com.github.iojjj.bootstrap.adapters.viewholder.ViewHolder
 
-class StringView : BaseStringView, ViewHolder<String> {
+class StringView : BaseStringView {
 
     constructor(context: Context) : super(context, "Kotlin")
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs, "Kotlin")

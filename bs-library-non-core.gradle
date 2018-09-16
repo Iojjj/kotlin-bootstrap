@@ -1,0 +1,5 @@
+apply from: "$rootProject.projectDir/bs-library.gradle"
+
+dependencies {
+    implementation project(':bs-core')
+}

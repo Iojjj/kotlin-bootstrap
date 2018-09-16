@@ -4,7 +4,11 @@ import android.support.v7.util.BatchingListUpdateCallback
 import com.github.iojjj.bootstrap.adapters.selection.selections.MultipleSelection
 import com.github.iojjj.bootstrap.adapters.selection.selections.MutableSelection
 import com.github.iojjj.bootstrap.adapters.selection.selections.SingleSelection
-import com.github.iojjj.bootstrap.utils.*
+import com.github.iojjj.bootstrap.core.Predicate
+import com.github.iojjj.bootstrap.core.Predicates
+import com.github.iojjj.bootstrap.utils.InvokableObservable
+import com.github.iojjj.bootstrap.utils.Observable
+import com.github.iojjj.bootstrap.utils.observableOf
 
 /**
  * Implementation of [SelectionTracker].
@@ -52,12 +56,8 @@ internal class SelectionTrackerImpl<T>(
 
     override fun checkSelection() {
         val snapshot = selection.snapshot()
-        snapshot.forEach {
-            val position = positionMapper(it)
-            if (position < 0) {
-                selection.remove(it)
-            }
-        }
+        val toRemove = snapshot.filter { positionMapper(it) < 0 }
+        changeSelection(toRemove, false)
     }
 
     private fun changeSelection(items: Iterable<T>, selected: Boolean): Boolean {

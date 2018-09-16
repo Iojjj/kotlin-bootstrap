@@ -21,12 +21,14 @@ import com.github.iojjj.app.core.BaseRecyclerViewActivity;
 import com.github.iojjj.bootstrap.adapters.adapter.PagedAdapter;
 import com.github.iojjj.bootstrap.adapters.data.ConfigLiveData;
 import com.github.iojjj.bootstrap.adapters.data.Configuration;
+import com.github.iojjj.bootstrap.adapters.data.ListDataSource;
 import com.github.iojjj.bootstrap.adapters.selection.selections.MutableSelection;
 import com.github.iojjj.bootstrap.adapters.selection.selections.Selection;
 import com.github.iojjj.bootstrap.adapters.selection.trackers.SelectionTracker;
 import com.github.iojjj.bootstrap.utils.BackPressHandler;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -38,7 +40,25 @@ public final class RecyclerViewActivity extends BaseRecyclerViewActivity {
 
     private PagedAdapter<String> mAdapter;
     private Toast mToast;
+    private Disposable mTimerOperation;
     private final BackPressHandler mBackPressHandler = BackPressHandler.newInstance(2, TimeUnit.SECONDS, this::showOnBackPressPrompt);
+
+    private static List<String> filter(@NonNull final List<String> strings, @NonNull final Configuration configuration) {
+        final List<String> removed = configuration.get(KEY_REMOVED);
+        final String filter = configuration.getOrDefault(PagedAdapter.CONFIG_KEY_FILTER, (String) null);
+        if (filter == null && (removed == null || removed.isEmpty())) {
+            return strings;
+        }
+        final List<String> filteredData = new ArrayList<>();
+        for (final String d : strings) {
+            final boolean acceptedByFilter = filter == null || d.toLowerCase().contains(filter.toLowerCase());
+            final boolean acceptedByRemoved = removed == null || !removed.contains(d);
+            if (acceptedByFilter && acceptedByRemoved) {
+                filteredData.add(d);
+            }
+        }
+        return filteredData;
+    }
 
     @Override
     protected void onCreate(@Nullable final Bundle savedInstanceState) {
@@ -68,38 +88,28 @@ public final class RecyclerViewActivity extends BaseRecyclerViewActivity {
     private PagedAdapter<String> ensureAdapter() {
         if (mAdapter == null) {
 
-            final MutableLiveData<List<String>> data = new MutableLiveData<>();
-//            final ConfigLiveData<List<String>> testData = ConfigLiveData.<List<String>>ofSingle()
-//                    .withLiveData(data)
-//                    .withFetchExecutor(ArchTaskExecutor.getIOThreadExecutor())
-//                    .build();
-//            testData.observe(this, strings -> Log.d("TEST_DATA", strings == null ? "null" : Arrays.toString(strings.toArray())));
+            final MutableLiveData<List<Integer>> data = new MutableLiveData<>();
 
-            Observable.interval(1, TimeUnit.SECONDS)
+            mTimerOperation = Observable.interval(1, TimeUnit.SECONDS)
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(count -> data.postValue(generateCollection(count)));
 
-            final ConfigLiveData<PagedList<String>> liveData = ConfigLiveData.<Integer, String>ofPagedList()
-                    .withLiveData(data, strings -> {
-                        final List<String> removed = mAdapter.getConfiguration().get(KEY_REMOVED);
-                        final String filter = mAdapter.getConfiguration().getOrDefault(PagedAdapter.CONFIG_KEY_FILTER, (String) null);
-                        if (filter == null && (removed == null || removed.isEmpty())) {
-                            return strings;
-                        }
-                        final List<String> filteredData = new ArrayList<>();
-                        for (final String d : strings) {
-                            final boolean acceptedByFilter = filter == null || d.toLowerCase().contains(filter.toLowerCase());
-                            final boolean acceptedByRemoved = removed == null || !removed.contains(d);
-                            if (acceptedByFilter && acceptedByRemoved) {
-                                filteredData.add(d);
-                            }
-                        }
-                        return filteredData;
-                    })
+            final ConfigLiveData<PagedList<String>> liveData = ConfigLiveData.Factory.<Integer, Integer>ofPagedList()
+                    .withLiveData(data)
                     .withPageSize(PAGE_SIZE)
                     .withFetchExecutor(ArchTaskExecutor.getIOThreadExecutor())
+                    .withNotifyExecutor(ArchTaskExecutor.getMainThreadExecutor())
                     .withObserveInstantly(true)
-                    .build();
+                    .build()
+                    .map((ConfigLiveData.DataMapper<PagedList<Integer>, PagedList<String>>) value -> {
+                        final List<String> strings = convertToStrings(value);
+                        final List<String> result = filter(strings, mAdapter.getConfiguration());
+                        return new PagedList.Builder<>(ListDataSource.of(result), Math.max(result.size(), 1))
+                                .setFetchExecutor(ArchTaskExecutor.getIOThreadExecutor())
+                                .setNotifyExecutor(ArchTaskExecutor.getMainThreadExecutor())
+                                .setInitialKey((Integer) value.getLastKey())
+                                .build();
+                    });
             mAdapter = PagedAdapter.newBuilderWith(liveData)
                     .withSimplePlaceholderType(R.layout.list_item_placeholder)
                     .withItemType(R.layout.list_item_string, String.class)
@@ -129,7 +139,9 @@ public final class RecyclerViewActivity extends BaseRecyclerViewActivity {
 
                                 @Override
                                 public void onSelectionChanged(@NotNull final Selection<String> selection) {
-                                    setActionModeTitle(String.valueOf(selection.getSize()));
+                                    if (!selection.isEmpty()) {
+                                        setActionModeTitle(String.valueOf(selection.getSize()));
+                                    }
                                 }
 
                                 @Override
@@ -143,11 +155,21 @@ public final class RecyclerViewActivity extends BaseRecyclerViewActivity {
         return mAdapter;
     }
 
-    private List<String> generateCollection(final long count) {
-        final List<String> data = new ArrayList<>();
+    @NonNull
+    private List<String> convertToStrings(PagedList<Integer> integers) {
+        final List<Integer> snapshot = integers.snapshot();
+        final List<String> result = new ArrayList<>();
+        for (Integer integer : snapshot) {
+            result.add(String.format(Locale.US, "Item %d", integer));
+        }
+        return result;
+    }
+
+    private List<Integer> generateCollection(final long count) {
+        final List<Integer> data = new ArrayList<>();
         final int size = (int) (count % 10);
         for (int i = 0; i < size; i++) {
-            data.add(String.format(Locale.US, "Item %d", i + 1));
+            data.add(i + 1);
         }
         return data;
     }
@@ -165,7 +187,7 @@ public final class RecyclerViewActivity extends BaseRecyclerViewActivity {
         for (final String item : snapshot) {
             removed.add(item);
         }
-        adapter.getConfiguration().notifyConfigurationChanged();
+        adapter.getLiveData().invalidate();
     }
 
     @Override
@@ -177,6 +199,14 @@ public final class RecyclerViewActivity extends BaseRecyclerViewActivity {
     public void onBackPressed() {
         if (!mBackPressHandler.onBackPressed()) {
             super.onBackPressed();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mTimerOperation != null) {
+            mTimerOperation.dispose();
         }
     }
 
@@ -214,27 +244,13 @@ public final class RecyclerViewActivity extends BaseRecyclerViewActivity {
             callback.onResult(mData.subList(params.startPosition, params.startPosition + params.loadSize));
         }
 
-        private static final class Factory implements ConfigLiveData.Factory<DataSource<Integer, String>> {
+        private static final class DataFactory implements ConfigLiveData.DataFactory<DataSource<Integer, String>> {
 
             private List<String> mData;
 
             @Override
             public DataSource<Integer, String> create(@NonNull final Configuration configuration) {
-                final List<String> removed = configuration.get(KEY_REMOVED);
-                final String filter = configuration.getOrDefault(PagedAdapter.CONFIG_KEY_FILTER, (String) null);
-                if (filter == null && (removed == null || removed.isEmpty())) {
-                    return new StringDataSource(ensureData());
-                }
-                final List<String> data = ensureData();
-                final List<String> filteredData = new ArrayList<>();
-                for (final String d : data) {
-                    final boolean acceptedByFilter = filter == null || d.toLowerCase().contains(filter.toLowerCase());
-                    final boolean acceptedByRemoved = removed == null || !removed.contains(d);
-                    if (acceptedByFilter && acceptedByRemoved) {
-                        filteredData.add(d);
-                    }
-                }
-                return new StringDataSource(filteredData);
+                return new StringDataSource(filter(ensureData(), configuration));
             }
 
             private List<String> ensureData() {

@@ -1,8 +1,8 @@
 package com.github.iojjj.bootstrap.adapters.selection.trackers
 
 import com.github.iojjj.bootstrap.adapters.selection.selections.Selection
+import com.github.iojjj.bootstrap.core.Predicate
 import com.github.iojjj.bootstrap.utils.Observable
-import com.github.iojjj.bootstrap.utils.Predicate
 
 /**
  * Tracker used to store information about selected items.

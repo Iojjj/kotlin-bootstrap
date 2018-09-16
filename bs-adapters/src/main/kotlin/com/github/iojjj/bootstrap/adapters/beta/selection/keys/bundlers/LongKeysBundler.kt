@@ -1,0 +1,13 @@
+package com.github.iojjj.bootstrap.adapters.beta.selection.keys.bundlers
+
+import android.os.Bundle
+import com.github.iojjj.bootstrap.beta.utils.Bundler
+
+private const val KEY_LONG_KEYS = "com.github.iojjj.bootstrap.adapters.beta.selection.keys.LONG_KEYS"
+
+class LongKeysBundler : Bundler<Collection<Long>> {
+
+    override fun read(bundle: Bundle): Collection<Long>? = bundle.getLongArray(KEY_LONG_KEYS)?.toList()
+
+    override fun write(item: Collection<Long>?, bundle: Bundle) = bundle.putLongArray(KEY_LONG_KEYS, item?.toLongArray())
+}

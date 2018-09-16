@@ -7,8 +7,13 @@ import android.support.annotation.Nullable;
 import android.support.v7.widget.AppCompatTextView;
 import android.text.TextUtils;
 import android.util.AttributeSet;
+import com.github.iojjj.bootstrap.adapters.adapter.PagedAdapter;
+import com.github.iojjj.bootstrap.adapters.viewholder.ViewHolder;
+import org.jetbrains.annotations.NotNull;
 
-public abstract class BaseStringView extends AppCompatTextView {
+import java.util.List;
+
+public abstract class BaseStringView extends AppCompatTextView implements ViewHolder<String> {
 
     @NonNull
     private final String mTitle;
@@ -29,7 +34,17 @@ public abstract class BaseStringView extends AppCompatTextView {
         mTitle = title;
     }
 
+    @Override
+    public void onCreated(@NotNull PagedAdapter<?> adapter) {
+        /* no-op */
+    }
+
     public void updateText(@Nullable final CharSequence text) {
         setText(TextUtils.concat(mTitle, ": ", text));
+    }
+
+    @Override
+    public void bind(@NonNull final PagedAdapter<?> adapter, final int position, final String item, final List<Object> payload) {
+        bind(adapter, position, item);
     }
 }

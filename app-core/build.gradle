@@ -30,9 +30,9 @@ dependencies {
 
     implementation project(':bs-adapters')
 
-    api "com.android.support:appcompat-v7:$android_sdk_version_target"
-    api "com.android.support:design:$android_sdk_version_target"
-    api "com.android.support:recyclerview-v7:$android_sdk_version_target"
+    api "com.android.support:appcompat-v7:$android_version_support"
+    api "com.android.support:design:$android_version_support"
+    api "com.android.support:recyclerview-v7:$android_version_support"
 
     implementation "com.futuremind.recyclerfastscroll:fastscroll:$lib_version_fastscroll"
 

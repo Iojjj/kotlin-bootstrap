@@ -5,26 +5,29 @@ buildscript {
 
     ext {
 
-        kotlin_version = '1.2.60'
-        gradle_version = '3.1.3'
+        kotlin_version = '1.2.70'
+        gradle_version = '3.1.4'
 
         publish_version_bintray = '1.8.4'
         publish_version_android_maven = '2.1'
         publish_version_dokka = '0.9.17'
-        maven_publish_version = '0.4.0'
-
-        android_sdk_version_target = '28.0.0-alpha3'
-        android_ktx_version = '0.3'
-        android_padging_version = '1.0.1'
 
         sdk_version_compile = 28
         sdk_version_min = 15
         sdk_version_target = 28
 
+        android_version_support = '28.0.0-rc02'
+        android_version_ktx = '0.3'
+        android_version_pagination = '1.0.1'
+
         lib_version_fastscroll = '0.2.5'
         lib_version_rxjava2 = '2.1.16'
         lib_version_rxkotlin = '2.2.0'
         lib_version_rxandroid = '2.0.2'
+
+        test_version_junit = '4.12'
+        test_version_robolectric = '3.8'
+        test_version_mockito = '2.18.0'
 
         version_code = 1
         version_name = "1.0.0"
