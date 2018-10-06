@@ -19,19 +19,19 @@ class BackPressHandlerTest {
     }
 
     @Test
-    fun onBackPressedMs() {
+    fun onBackPressed_whenConstructorReceived_rawMs_shouldWorkAsExpected() {
         val handler = BackPressHandler.newInstance(1000L, testCallback)
         testBackPressed(handler)
     }
 
     @Test
-    fun onBackPressedUnits() {
+    fun onBackPressed_whenConstructorReceived_units_shouldWorkAsExpected() {
         val handler = BackPressHandler.newInstance(1, TimeUnit.SECONDS, testCallback)
         testBackPressed(handler)
     }
 
     @Test
-    fun wrongInitializationParams() {
+    fun newInstance_whenPassedInvalidTimeout_shouldThrowIllegalArgumentException() {
         try {
             BackPressHandler.newInstance(-5, testCallback)
             fail("Initialization with negative timeout must throw an exception.")

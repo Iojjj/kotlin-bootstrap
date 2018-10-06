@@ -13,7 +13,7 @@ interface ViewHolder<in T> {
     /**
      * Factory that creates stub view holders that do nothing.
      */
-    companion object Factory : PagedAdapter.ViewHolderFactory {
+    companion object StubFactory : PagedAdapter.ViewHolderFactory {
         override fun create(view: View): RecyclerView.ViewHolder {
             return StubViewHolder(view)
         }

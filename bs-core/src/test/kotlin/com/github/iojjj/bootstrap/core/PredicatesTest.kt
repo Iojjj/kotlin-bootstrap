@@ -6,15 +6,16 @@ import org.junit.Test
 /**
  * JUnit test suite for [Predicates] class.
  */
+@Suppress("TestFunctionName")
 class PredicatesTest {
 
     @Test
-    fun testAlwaysTrue() {
+    fun ALWAYS_TRUE_expectOnlyTrue() {
         assertSameResult(true, Predicates.ALWAYS_TRUE)
     }
 
     @Test
-    fun testAlwaysFalse() {
+    fun ALWAYS_FALSE_expectOnlyFalse() {
         assertSameResult(false, Predicates.ALWAYS_FALSE)
     }
 

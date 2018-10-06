@@ -15,6 +15,14 @@ internal class SingleSelection<T> : MutableSelection<T> {
         private val EMPTY = Any()
     }
 
+    constructor()
+    constructor(from: Iterable<T>) : this() {
+        val iterator = from.iterator()
+        if (iterator.hasNext()) {
+            add(iterator.next())
+        }
+    }
+
     private var item: Any? = EMPTY
 
     override val size: Int
@@ -24,7 +32,7 @@ internal class SingleSelection<T> : MutableSelection<T> {
 
     override fun contains(item: T): Boolean = this.item == item
 
-    override fun snapshot(): MutableSelection<T> = MultipleSelection(this)
+    override fun snapshot(): MutableSelection<T> = SingleSelection(this)
 
     override fun iterator(): Iterator<T> {
         return SelectionIterator(item)
@@ -54,11 +62,13 @@ internal class SingleSelection<T> : MutableSelection<T> {
 
     private class SelectionIterator<T>(private var nextItem: Any?) : AbstractIterator<T>() {
 
+        @Suppress("UNCHECKED_CAST")
         override fun computeNext() {
             if (nextItem != EMPTY) {
-                @Suppress("UNCHECKED_CAST")
                 setNext(nextItem as T)
                 nextItem = EMPTY
+            } else {
+                done()
             }
         }
     }

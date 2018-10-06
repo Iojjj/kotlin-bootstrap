@@ -31,9 +31,9 @@ import java.util.concurrent.TimeUnit
  * }
  * ```
  *
- * @property timeoutMs timeout in milliseconds
- * @property callback callback that will be called to show prompt message
- * @property lastTimePressed timestamp of last back press
+ * @property timeoutMs Timeout in milliseconds
+ * @property callback Callback that will be called to show prompt message
+ * @property lastTimePressed Timestamp of last back press
  */
 class BackPressHandler private constructor(private val timeoutMs: Long, private val callback: Callback?) : BackPressListener {
 

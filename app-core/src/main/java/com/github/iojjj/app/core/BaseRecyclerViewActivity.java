@@ -22,10 +22,10 @@ import java.util.concurrent.TimeUnit;
 
 public abstract class BaseRecyclerViewActivity extends AppCompatActivity {
 
-    protected static final String MARKER_DATA_SOURCE = "DATA_SOURCE_INVALIDATED";
-    protected static final String KEY_REMOVED = "removed_list";
-    protected static final int DATA_SET_SIZE = 5_000;
-    protected static final int PAGE_SIZE = 50;
+    public static final String MARKER_DATA_SOURCE = "DATA_SOURCE_INVALIDATED";
+    public static final String KEY_REMOVED = "removed_list";
+    public static final int DATA_SET_SIZE = 5_000;
+    public static final int PAGE_SIZE = 50;
 
     @NonNull
     private final Subject<String> mQueryProducer = PublishSubject.create();

@@ -1,4 +1,5 @@
 @file:Suppress("NOTHING_TO_INLINE")
+@file:JvmName("AppCompatActivityUtils")
 
 package androidx.app
 

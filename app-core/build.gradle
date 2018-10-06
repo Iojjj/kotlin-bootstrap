@@ -28,14 +28,14 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    implementation project(':bs-adapters')
+    api project(':bs-adapters')
 
     api "com.android.support:appcompat-v7:$android_version_support"
     api "com.android.support:design:$android_version_support"
     api "com.android.support:recyclerview-v7:$android_version_support"
 
-    implementation "com.futuremind.recyclerfastscroll:fastscroll:$lib_version_fastscroll"
+    api "com.futuremind.recyclerfastscroll:fastscroll:$lib_version_fastscroll"
 
-    implementation "io.reactivex.rxjava2:rxandroid:$lib_version_rxandroid"
-    implementation "io.reactivex.rxjava2:rxjava:$lib_version_rxjava2"
+    api "io.reactivex.rxjava2:rxandroid:$lib_version_rxandroid"
+    api "io.reactivex.rxjava2:rxjava:$lib_version_rxjava2"
 }

@@ -5,7 +5,7 @@ buildscript {
 
     ext {
 
-        kotlin_version = '1.2.70'
+        kotlin_version = '1.2.71'
         gradle_version = '3.1.4'
 
         publish_version_bintray = '1.8.4'
@@ -16,7 +16,7 @@ buildscript {
         sdk_version_min = 15
         sdk_version_target = 28
 
-        android_version_support = '28.0.0-rc02'
+        android_version_support = '28.0.0'
         android_version_ktx = '0.3'
         android_version_pagination = '1.0.1'
 
@@ -27,7 +27,7 @@ buildscript {
 
         test_version_junit = '4.12'
         test_version_robolectric = '3.8'
-        test_version_mockito = '2.18.0'
+        test_version_mockito = '2.20.0'
 
         version_code = 1
         version_name = "1.0.0"
@@ -38,7 +38,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath "com.android.tools.build:gradle:$gradle_version"
+        classpath "com.android.tools.build:gradle:3.2.0"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:$publish_version_bintray"
         classpath "com.github.dcendents:android-maven-gradle-plugin:$publish_version_android_maven"

@@ -27,7 +27,7 @@ class AdvancedTextWatcherTest {
     }
 
     @Test
-    fun testTextInsertedWhole() {
+    fun onTextChangedListener_whenInsertedNewText_shouldReceiveNotifications() {
         editText.addTextChangedListener(advancedTextWatcher)
         editText.setText("abc")
         verify(callback).onTextInserted("", "abc", "abc", 0)
@@ -37,7 +37,7 @@ class AdvancedTextWatcherTest {
     }
 
     @Test
-    fun testTextInsertedMiddle() {
+    fun onTextChangedListener_whenInsertedAdditionalText_shouldReceiveNotifications() {
         editText.setText("abc")
         editText.addTextChangedListener(advancedTextWatcher)
         editText.text.insert(2, "IN")
@@ -48,7 +48,7 @@ class AdvancedTextWatcherTest {
     }
 
     @Test
-    fun testTextRemoved() {
+    fun onTextChangedListener_whenRemovedWholeText_shouldReceiveNotifications() {
         editText.setText("abc")
         editText.addTextChangedListener(advancedTextWatcher)
         editText.setText("")
@@ -59,7 +59,18 @@ class AdvancedTextWatcherTest {
     }
 
     @Test
-    fun testTextReplacedWhole() {
+    fun onTextChangedListener_whenRemovedPartOfText_shouldReceiveNotifications() {
+        editText.setText("abc")
+        editText.addTextChangedListener(advancedTextWatcher)
+        editText.text.replace(1, 2, "")
+        verify(callback).onTextRemoved("abc", "ac", "b", 1)
+        verify(callback).onTextChanged("abc", "ac")
+        verify(callback, never()).onTextInserted(anyString(), anyString(), anyString(), anyInt())
+        verify(callback, never()).onTextReplaced(anyString(), anyString(), anyString(), anyString(), anyInt(), anyInt())
+    }
+
+    @Test
+    fun onTextChangedListener_whenReplacedWholeText_shouldReceiveNotifications() {
         editText.setText("abc")
         editText.addTextChangedListener(advancedTextWatcher)
         editText.setText("abINc")
@@ -70,7 +81,7 @@ class AdvancedTextWatcherTest {
     }
 
     @Test
-    fun testTextReplacedMiddle() {
+    fun onTextChangedListener_whenReplacedPartOfText_shouldReceiveNotifications() {
         editText.setText("abc")
         editText.addTextChangedListener(advancedTextWatcher)
         editText.text.replace(1, 2, "IN")

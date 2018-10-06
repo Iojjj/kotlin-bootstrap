@@ -1,4 +1,4 @@
-apply from: "$rootProject.projectDir/bs-library.gradle"
+apply from: "$rootProject.projectDir/bs-library-tests-core.gradle"
 
 dependencies {
     api "junit:junit:$test_version_junit"

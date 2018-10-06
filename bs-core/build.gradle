@@ -1,1 +1,1 @@
-apply from: "$rootProject.projectDir/bs-library.gradle"
+apply from: "$rootProject.projectDir/bs-library-core.gradle"

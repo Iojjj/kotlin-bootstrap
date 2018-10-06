@@ -55,7 +55,10 @@ interface SelectionTracker<T> : Observable<SelectionTracker.SelectionObserver<T>
      * @param items some items
      *
      * @return `true` if at least one item has been selected, `false` otherwise
+     *
+     * @throws UnsupportedOperationException if selection mode single
      */
+    @Throws(UnsupportedOperationException::class)
     fun select(items: Iterable<T>): Boolean
 
     /**
@@ -64,7 +67,10 @@ interface SelectionTracker<T> : Observable<SelectionTracker.SelectionObserver<T>
      * @param items some items
      *
      * @return `true` if at least one item has been selected, `false` otherwise
+     *
+     * @throws UnsupportedOperationException if selection mode single
      */
+    @Throws(UnsupportedOperationException::class)
     fun select(items: Array<T>): Boolean
 
     /**
@@ -82,7 +88,10 @@ interface SelectionTracker<T> : Observable<SelectionTracker.SelectionObserver<T>
      * @param items some items
      *
      * @return `true` if at least one item has been deselected, `false` otherwise
+     *
+     * @throws UnsupportedOperationException if selection mode single
      */
+    @Throws(UnsupportedOperationException::class)
     fun deselect(items: Iterable<T>): Boolean
 
     /**
@@ -91,17 +100,38 @@ interface SelectionTracker<T> : Observable<SelectionTracker.SelectionObserver<T>
      * @param items some items
      *
      * @return `true` if at least one item has been deselected, `false` otherwise
+     *
+     * @throws UnsupportedOperationException if selection mode single
      */
+    @Throws(UnsupportedOperationException::class)
     fun deselect(items: Array<T>): Boolean
 
     /**
      * Toggle selection of a single item.
      *
      * @param item some item
-     *
-     * @return `true` if item has been selected, `false` - if deselected
      */
-    fun toggle(item: T): Boolean
+    fun toggle(item: T)
+
+    /**
+     * Toggle selection of multiple items.
+     *
+     * @param items some items
+     *
+     * @throws UnsupportedOperationException if selection mode single
+     */
+    @Throws(UnsupportedOperationException::class)
+    fun toggle(items: Array<T>)
+
+    /**
+     * Toggle selection of multiple items.
+     *
+     * @param items some items
+     *
+     * @throws UnsupportedOperationException if selection mode single
+     */
+    @Throws(UnsupportedOperationException::class)
+    fun toggle(items: Iterable<T>)
 
     /**
      * Clear selection.

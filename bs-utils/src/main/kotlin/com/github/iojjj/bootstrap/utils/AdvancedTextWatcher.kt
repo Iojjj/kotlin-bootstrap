@@ -8,13 +8,13 @@ import android.text.TextWatcher
 /**
  * Implementation of [TextWatcher] that invokes more user-friendly callback methods.
  *
- * @property observable instance of `Observable` that will store listeners
- * @property beforeText text that is being replaced
- * @property beforeStart start position in [beforeText]
- * @property afterText text that replaced [beforeText]
- * @property afterStart start position in [afterText]
- * @property insertedText text that was inserted
- * @property replacedText text that was replaced
+ * @property observable Instance of `Observable` that will store listeners
+ * @property beforeText Text that is being replaced
+ * @property beforeStart Start position in [beforeText]
+ * @property afterText Text that replaced [beforeText]
+ * @property afterStart Start position in [afterText]
+ * @property insertedText Text that was inserted
+ * @property replacedText Text that was replaced
  */
 class AdvancedTextWatcher private constructor(private val observable: InvokableObservable<OnTextChangedListener> = observableOf())
     :

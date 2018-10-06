@@ -6,6 +6,8 @@ import com.github.iojjj.bootstrap.adapters.selection.selections.MutableSelection
 import com.github.iojjj.bootstrap.adapters.selection.selections.SingleSelection
 import com.github.iojjj.bootstrap.core.Predicate
 import com.github.iojjj.bootstrap.core.Predicates
+import com.github.iojjj.bootstrap.core.Predicates.ALWAYS_FALSE
+import com.github.iojjj.bootstrap.core.Predicates.ALWAYS_TRUE
 import com.github.iojjj.bootstrap.utils.InvokableObservable
 import com.github.iojjj.bootstrap.utils.Observable
 import com.github.iojjj.bootstrap.utils.observableOf
@@ -25,53 +27,72 @@ internal class SelectionTrackerImpl<T>(
         SelectionTracker<T>,
         Observable<SelectionTracker.SelectionObserver<T>> by observable {
 
+    private val isSingleSelection = selection is SingleSelection
+
     override fun isSelected(item: T): Boolean = selection.contains(item)
 
-    override fun select(item: T): Boolean = changeSelection(listOf(item), true)
+    override fun select(item: T): Boolean = changeSelection(listOf(item), ALWAYS_TRUE)
 
-    override fun select(items: Iterable<T>): Boolean = changeSelection(items, true)
+    override fun select(items: Iterable<T>): Boolean {
+        checkUnsupportedOperation()
+        return changeSelection(items, ALWAYS_TRUE)
+    }
 
-    override fun select(items: Array<T>): Boolean = changeSelection(items.asIterable(), true)
+    override fun select(items: Array<T>): Boolean {
+        checkUnsupportedOperation()
+        return changeSelection(items.asIterable(), ALWAYS_TRUE)
+    }
 
-    override fun deselect(item: T): Boolean = changeSelection(listOf(item), false)
+    override fun deselect(item: T): Boolean = changeSelection(listOf(item), ALWAYS_FALSE)
 
-    override fun deselect(items: Iterable<T>): Boolean = changeSelection(items, false)
+    override fun deselect(items: Iterable<T>): Boolean {
+        checkUnsupportedOperation()
+        return changeSelection(items, ALWAYS_FALSE)
+    }
 
-    override fun deselect(items: Array<T>): Boolean = changeSelection(items.asIterable(), false)
+    override fun deselect(items: Array<T>): Boolean {
+        checkUnsupportedOperation()
+        return changeSelection(items.asIterable(), ALWAYS_FALSE)
+    }
 
-    override fun toggle(item: T): Boolean {
-        return if (selection.contains(item)) {
-            deselect(item)
-            false
-        } else {
-            select(item)
-            true
-        }
+    override fun toggle(item: T) {
+        changeSelection(listOf(item)) { !selection.contains(it) }
+    }
+
+    override fun toggle(items: Array<T>) {
+        checkUnsupportedOperation()
+        changeSelection(items.asIterable()) { !selection.contains(it) }
+    }
+
+    override fun toggle(items: Iterable<T>) {
+        checkUnsupportedOperation()
+        changeSelection(items) { !selection.contains(it) }
     }
 
     override fun clear() {
         val snapshot = selection.snapshot()
-        changeSelection(snapshot, false)
+        changeSelection(snapshot, ALWAYS_FALSE)
     }
 
     override fun checkSelection() {
         val snapshot = selection.snapshot()
         val toRemove = snapshot.filter { positionMapper(it) < 0 }
-        changeSelection(toRemove, false)
+        changeSelection(toRemove, ALWAYS_FALSE)
     }
 
-    private fun changeSelection(items: Iterable<T>, selected: Boolean): Boolean {
+    private fun changeSelection(items: Iterable<T>, isSelected: Predicate<T>): Boolean {
         if (!items.iterator().hasNext()) {
             // empty collection
             return false
         }
+        checkItemsInAdapter(items)
         val wasEmpty = selection.isEmpty()
-        val singleItem = if (!wasEmpty && selection is SingleSelection) {
+        val singleItem = if (!wasEmpty && isSingleSelection) {
             selection.iterator().next()
         } else {
             null
         }
-        val operation: (T) -> Boolean = if (selected) selection::add else selection::remove
+        val operation: (T) -> Boolean = { if (isSelected(it)) selection.add(it) else selection.remove(it) }
         val changedItems = items
                 .filter(predicate)
                 .filter(operation)
@@ -95,12 +116,32 @@ internal class SelectionTrackerImpl<T>(
         }
     }
 
+    private fun checkItemsInAdapter(items: Iterable<T>) {
+        val itemsOutsideOfAdapter = items
+                .map(positionMapper)
+                .filter { it == -1 }
+                .count()
+        if (itemsOutsideOfAdapter > 0) {
+            if (itemsOutsideOfAdapter == 1) {
+                throw IllegalArgumentException("Adapter doesn't contain 1 item.")
+            } else {
+                throw IllegalArgumentException("Adapter doesn't contain $items items.")
+            }
+        }
+    }
+
     private fun notifySelectionChanged(items: Collection<T>) {
         items
                 .map(positionMapper)
                 .filter { it > -1 }
                 .forEach { callback.onChanged(it, 1, SelectionTracker.SELECTION_CHANGED_MARKER) }
         callback.dispatchLastEvent()
+    }
+
+    private fun checkUnsupportedOperation() {
+        if (isSingleSelection) {
+            throw UnsupportedOperationException()
+        }
     }
 
     internal class Builder<T> :

@@ -1,3 +1,5 @@
+@file:JvmName("ByteArrayUtils")
+
 package kotlinx
 
 private val HEX_CHARS = "0123456789ABCDEF".toCharArray()

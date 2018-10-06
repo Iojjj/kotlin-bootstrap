@@ -1,3 +1,5 @@
+@file:JvmName("StringUtils")
+
 package kotlinx
 
 import android.os.Build

@@ -2,23 +2,17 @@ package com.github.iojjj.app.kotlin
 
 import android.annotation.SuppressLint
 import android.arch.core.executor.ArchTaskExecutor
-import android.arch.paging.DataSource
-import android.arch.paging.PositionalDataSource
-import android.graphics.Typeface
 import android.os.Bundle
 import android.support.v7.widget.RecyclerView
-import android.text.Spannable
-import android.text.SpannableStringBuilder
-import android.text.style.StyleSpan
 import android.widget.Toast
 import androidx.app.setSupportActionBar
 import com.github.iojjj.app.core.BaseRecyclerViewActivity
 import com.github.iojjj.bootstrap.adapters.adapter.PagedAdapter
 import com.github.iojjj.bootstrap.adapters.data.ConfigLiveData
-import com.github.iojjj.bootstrap.adapters.data.Configuration
 import com.github.iojjj.bootstrap.adapters.selection.selections.Selection
 import com.github.iojjj.bootstrap.adapters.selection.trackers.SelectionTracker
 import com.github.iojjj.bootstrap.utils.BackPressHandler
+import kotlinx.fromHtml
 import java.util.concurrent.TimeUnit
 
 @SuppressLint("RestrictedApi")
@@ -60,11 +54,14 @@ class RecyclerViewActivity : BaseRecyclerViewActivity() {
                                     setActionModeTitle(selection.size.toString())
                                 }
                             }
+
                             override fun onSelectionStopped(selection: Selection<String>) = stopSelection()
                         })
                 )
                 .build()
     }
+
+    private var toast: Toast? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -109,42 +106,9 @@ class RecyclerViewActivity : BaseRecyclerViewActivity() {
     }
 
     private fun showOnBackPressPrompt() {
-        val builder = SpannableStringBuilder("Press Back again to close the app.")
-        val start = builder.indexOf("Back")
-        val end = start + "Back".length
-        builder.setSpan(StyleSpan(Typeface.BOLD), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-        Toast.makeText(this, builder, Toast.LENGTH_SHORT).show()
+        toast?.cancel()
+        toast = Toast.makeText(this, "Press <b>Back</b> again to close the app.".fromHtml(), Toast.LENGTH_SHORT)
+        toast!!.show()
     }
 
-    private class StringDataSource(private val data: List<String>) : PositionalDataSource<String>() {
-
-        companion object DataFactory : ConfigLiveData.DataFactory<DataSource<Int, String>> {
-
-            private val data: List<String> by lazy { (0..DATA_SET_SIZE).map { "Item ${(it + 1)}" } }
-
-            override fun create(configuration: Configuration): StringDataSource {
-                val removed: List<String>? = configuration[KEY_REMOVED]
-                val filter: String? = configuration[PagedAdapter.CONFIG_KEY_FILTER]
-                return if (filter == null && (removed == null || removed.isEmpty())) {
-                    StringDataSource(data)
-                } else {
-                    val stringFilter: (String) -> Boolean =
-                            { (filter == null || it.contains(filter, true)) && (removed == null || !removed.contains(it)) }
-                    val filteredData = data.filter(stringFilter)
-                    StringDataSource(filteredData)
-                }
-            }
-        }
-
-        override fun loadInitial(params: LoadInitialParams, callback: LoadInitialCallback<String>) {
-            val size = data.size
-            val startPosition = computeInitialLoadPosition(params, size)
-            val loadSize = computeInitialLoadSize(params, startPosition, size)
-            callback.onResult(data.subList(startPosition, loadSize), startPosition, size)
-        }
-
-        override fun loadRange(params: LoadRangeParams, callback: LoadRangeCallback<String>) {
-            callback.onResult(data.subList(params.startPosition, params.startPosition + params.loadSize))
-        }
-    }
 }

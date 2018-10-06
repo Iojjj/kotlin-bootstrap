@@ -1,25 +1,25 @@
-apply plugin: 'com.android.application'
-
+apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
+apply from: "$rootProject.projectDir/deploy.gradle"
 
 android {
     compileSdkVersion sdk_version_compile
     defaultConfig {
-        applicationId "com.github.iojjj.app.kotlin"
         minSdkVersion sdk_version_min
         targetSdkVersion sdk_version_target
-        versionCode version_code
-        versionName version_name
+
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+
     }
+
     buildTypes {
         debug {
 //            testCoverageEnabled true
+            consumerProguardFiles 'proguard-rules.pro'
         }
         release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            minifyEnabled true
+            consumerProguardFiles 'proguard-rules.pro'
         }
     }
 
@@ -33,14 +33,22 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+
+    resourcePrefix "bs_"
+
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
 
-    implementation project(':app-core')
-    implementation project(':bs-utils')
+    // Kotlin
+    api "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 
-    implementation "io.reactivex.rxjava2:rxandroid:$lib_version_rxandroid"
-    implementation "io.reactivex.rxjava2:rxkotlin:$lib_version_rxkotlin"
+    // AppCompat
+    implementation "com.android.support:support-annotations:$android_version_support"
 }

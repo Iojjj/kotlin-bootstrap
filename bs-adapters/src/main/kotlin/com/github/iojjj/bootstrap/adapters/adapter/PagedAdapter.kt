@@ -327,7 +327,7 @@ class PagedAdapter<T> private constructor(
 
         /**
          * Set specific layout for placeholders. Same as calling [withPlaceholderType(Int, ViewHolderFactory)][withPlaceholderType]
-         * with [ViewHolder.Factory] as `ViewHolderFactory`. If root view implements [ViewHolder] or [PlaceholderViewHolder],
+         * with [ViewHolder.StubFactory] as `ViewHolderFactory`. If root view implements [ViewHolder] or [PlaceholderViewHolder],
          * no appropriate [ViewHolder.bind] methods will be called.
          *
          * @param layoutId resource ID of layout
@@ -617,7 +617,7 @@ class PagedAdapter<T> private constructor(
         }
 
         override fun withSimplePlaceholderType(layoutId: Int): StageOptional<T> {
-            return withPlaceholderType(layoutId, ViewHolder.Factory)
+            return withPlaceholderType(layoutId, ViewHolder.StubFactory)
         }
 
         override fun withPlaceholderType(@LayoutRes layoutId: Int): StageOptional<T> {

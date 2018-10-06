@@ -24,7 +24,11 @@ internal object StubSelectionTracker : SelectionTracker<Any?> {
 
     override fun deselect(items: Array<Any?>): Boolean = false
 
-    override fun toggle(item: Any?): Boolean = false
+    override fun toggle(item: Any?) {}
+
+    override fun toggle(items: Array<Any?>) {}
+
+    override fun toggle(items: Iterable<Any?>) {}
 
     override fun clear() {
         /* no-op */

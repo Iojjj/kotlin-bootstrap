@@ -28,7 +28,7 @@ class InvokableObservableTest {
      * Test for [InvokableObservable.addObserver] method.
      */
     @Test
-    fun addListener() {
+    fun addListener_mustAddAnyListener() {
         assertEquals(true, observable.addObserver(testListener1))
         assertEquals(true, observable.addObserver(testListener1))
         assertEquals(true, observable.addObserver(testListener2))
@@ -38,8 +38,9 @@ class InvokableObservableTest {
      * Test for [InvokableObservable.removeObserver] method.
      */
     @Test
-    fun removeListener() {
-        assertEquals(true, observable.addObserver(testListener1))
+    fun removeListener_mustRemoveOnlyAddedListener() {
+        assertEquals(false, observable.removeObserver(testListener1))
+        observable.addObserver(testListener1)
         assertEquals(true, observable.removeObserver(testListener1))
         assertEquals(false, observable.removeObserver(testListener1))
         assertEquals(false, observable.removeObserver(testListener2))
@@ -49,7 +50,7 @@ class InvokableObservableTest {
      * Test for [InvokableObservable.notifyObservers] method.
      */
     @Test
-    fun notifyListeners() {
+    fun notifyListeners_mustNotifyListenersProperNumberOfTimes() {
         observable.addObserver(testListener1)
         observable.addObserver(testListener1)
         observable.addObserver(testListener2)
